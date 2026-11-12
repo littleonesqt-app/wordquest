@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Quest 단어 퀘스트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{ color-scheme:light;
+  --bg:#bfe7ff; --ink:#1d2340; --card:#ffffff; --line:#1d2340;
+  --green:#3ccf6e; --red:#ff5a5f; --yellow:#ffd23f; --blue:#3d8bff; --purple:#8b5cf6; --orange:#ff8a3d;
+  --muted:#6b7394;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Jua","Fredoka",system-ui,sans-serif}
+body{min-height:100vh;background:
+  linear-gradient(180deg,#8fd3ff 0%,#bfe7ff 45%,#9be38f 45.2%,#7fd472 100%) fixed}
+.en{font-family:"Fredoka","Jua",system-ui,sans-serif}
+#app{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+button{font-family:inherit;cursor:pointer;border:none;color:var(--ink);-webkit-text-fill-color:currentColor}
+.card{background:var(--card);border:3px solid var(--line);border-radius:18px;box-shadow:0 5px 0 var(--line);padding:16px;margin:12px 0}
+.btn{display:block;width:100%;padding:14px 16px;font-size:20px;border:3px solid var(--line);border-radius:14px;box-shadow:0 5px 0 var(--line);background:var(--yellow);color:var(--ink);transition:transform .05s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--line)}
+.btn.green{background:var(--green);color:#fff}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.purple{background:var(--purple);color:#fff}
+.btn.white{background:#fff}
+.btn.small{font-size:16px;padding:10px 12px}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{flex:1}
+h1{font-size:34px;margin:6px 0 2px;text-align:center;text-shadow:0 3px 0 #fff}
+.sub{text-align:center;color:var(--muted);margin:0 0 10px;font-size:16px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{background:#fff;border:3px solid var(--line);border-radius:999px;padding:4px 10px;font-size:17px;box-shadow:0 3px 0 var(--line);white-space:nowrap}
+.back{background:#fff;border:3px solid var(--line);border-radius:12px;padding:4px 10px;font-size:18px;box-shadow:0 3px 0 var(--line)}
+.grow{flex:1}
+
+/* blocky avatar (original) */
+.ava{width:64px;height:84px;position:relative;flex:none}
+.ava .head{position:absolute;left:14px;top:0;width:36px;height:34px;background:#ffd8a8;border:3px solid var(--line);border-radius:6px}
+.ava .head:before,.ava .head:after{content:"";position:absolute;top:11px;width:6px;height:8px;background:var(--line);border-radius:2px}
+.ava .head:before{left:8px}.ava .head:after{right:8px}
+.ava .body{position:absolute;left:8px;top:36px;width:48px;height:30px;border:3px solid var(--line);border-radius:6px}
+.ava .legs{position:absolute;left:14px;top:66px;width:36px;height:18px;background:#3b4a7a;border:3px solid var(--line);border-radius:4px}
+.ava.big{transform:scale(1.4);margin:14px 20px}
+
+.prof{display:flex;align-items:center;gap:14px;text-align:left;font-size:22px}
+.prof small{display:block;color:var(--muted);font-size:15px}
+
+.bar{height:16px;background:#e7ebf7;border:3px solid var(--line);border-radius:999px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--green)}
+.stages{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stage{background:#fff;border:3px solid var(--line);border-radius:14px;padding:10px;text-align:left;box-shadow:0 4px 0 var(--line);font-size:17px}
+.stage.on{background:#fff6cc;outline:4px solid var(--orange)}
+.stage small{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+
+.island{position:relative;min-height:150px;background:radial-gradient(ellipse at 50% 80%,#ffe6a3 0 55%,#7fd472 56%);border:3px solid var(--line);border-radius:18px;box-shadow:0 5px 0 var(--line);overflow:visible;padding:16px 8px 26px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.pet{font-size:38px;background:none;animation:bob 2.4s ease-in-out infinite;position:relative;padding:2px}
+.pet:nth-child(2n){animation-delay:.6s}.pet:nth-child(3n){animation-delay:1.1s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.bubble{position:absolute;bottom:105%;left:50%;transform:translateX(-50%);background:#fff;border:3px solid var(--line);border-radius:12px;padding:6px 10px;font-size:15px;white-space:nowrap;z-index:5;animation:none}
+.empty{color:#4c6b3c;font-size:16px;align-self:center;text-align:center}
+
+/* quiz */
+.qtop{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.word{font-size:46px;text-align:center;margin:8px 0 2px;font-weight:700;letter-spacing:.5px}
+.pos{text-align:center;color:var(--muted);font-size:16px}
+.ko{text-align:center;font-size:28px;margin:10px 0}
+.def{text-align:center;color:var(--muted);font-size:17px}
+.ex{font-size:20px;line-height:1.45;background:#f3f6ff;border:2px dashed #9aa6d6;border-radius:12px;padding:12px;margin-top:12px}
+.hl{background:var(--yellow);padding:0 4px;border-radius:5px}
+.blank{display:inline-block;min-width:80px;border-bottom:4px solid var(--line);text-align:center;color:var(--blue)}
+.opts{display:grid;gap:10px;margin-top:14px}
+.opt{background:#fff;border:3px solid var(--line);border-radius:14px;padding:13px;font-size:21px;box-shadow:0 4px 0 var(--line);text-align:center}
+.opt.right{background:var(--green);color:#fff}
+.opt.wrong{background:var(--red);color:#fff}
+.say{background:var(--blue);color:#fff;border:3px solid var(--line);border-radius:12px;padding:4px 10px;font-size:18px;box-shadow:0 3px 0 var(--line);margin-left:6px;vertical-align:middle}
+.tag{display:inline-block;font-size:14px;padding:2px 8px;border-radius:999px;border:2px solid var(--line);background:#fff}
+.tag.boss{background:var(--purple);color:#fff}
+.tag.new{background:var(--yellow)}
+.fb{border-radius:14px;padding:12px;margin-top:12px;font-size:19px;border:3px solid var(--line)}
+.fb.ok{background:#d8f8e2}.fb.no{background:#ffe0e1}
+input[type=text],textarea{width:100%;font-family:"Fredoka",sans-serif;font-size:22px;padding:12px;border:3px solid var(--line);border-radius:12px;margin-top:12px}
+textarea{min-height:90px;font-size:19px}
+.combo{position:fixed;top:20%;left:50%;transform:translateX(-50%);font-size:36px;color:#fff;text-shadow:0 3px 0 var(--line),0 0 8px var(--line);pointer-events:none;animation:pop 1s forwards;z-index:9}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-40px) scale(1)}}
+.stamp{text-align:center;font-size:24px;background:var(--yellow);border:3px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 5px 0 var(--line);transform:rotate(-2deg)}
+.big{font-size:56px;text-align:center}
+.list .it{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:2px dashed #d6dbef;font-size:18px}
+.list .it:last-child{border:none}
+.list .it b{font-family:"Fredoka";min-width:120px}
+.list .it span{flex:1;color:var(--muted);font-size:16px}
+.shopgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:30px;text-align:center}
+.note{font-size:15px;color:var(--muted);line-height:1.5}
+.modal{position:fixed;inset:0;background:rgba(20,25,50,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal .card{max-width:440px;width:100%}
+label{display:block;margin-top:10px;font-size:16px}
+.colors{display:flex;gap:8px;margin-top:6px}
+.colors button{width:36px;height:36px;border-radius:10px;border:3px solid var(--line)}
+.colors button.on{outline:4px solid var(--orange)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ===================== WORD DATA =====================
+   word | part of speech | 한국어 뜻 | English meaning | example (*marked* form)  */
+const STAGES = [
+ {id:"e", name:"초등 복습", sub:"Grade 4–6", icon:"🌱", data:[
+"ignore|v.|무시하다|to pay no attention to|*Ignore* the noise and focus.",
+"brief|adj.|짧은, 잠깐의|lasting a short time|The server had a *brief* shutdown, so we only waited five minutes.",
+"recognize|v.|알아보다|to know from before|I *recognized* her voice right away.",
+"locate|v.|위치를 찾아내다|to find where something is|Use the map to *locate* the hidden treasure.",
+"major|adj.|주요한, 큰|important or big|There was a *major* change in the rules.",
+"solution|n.|해결책|an answer to a problem|We found a *solution* to the puzzle.",
+"sincere|adj.|진심 어린|honest and real|Please accept my *sincere* apology.",
+"drowsy|adj.|졸린|sleepy|The warm room made me *drowsy*.",
+"concern|n.|걱정, 관심사|a worry|My main *concern* is that we'll be late.",
+"complain|v.|불평하다|to say you are unhappy about something|Stop *complaining* and try again.",
+"adjust|v.|조정하다|to change slightly to fit|*Adjust* the camera so you can see the whole map.",
+"prefer|v.|선호하다|to like better|I *prefer* summer to winter.",
+"rely|v.|의지하다|to depend on|You can *rely* on me.",
+"defeat|v.|물리치다, 이기다|to beat in a fight or game|We finally *defeated* the giant robot.",
+"reluctant|adj.|꺼리는, 마지못한|not wanting to do something|My brother was *reluctant* to share his snacks.",
+"convince|v.|확신시키다, 설득하다|to make someone believe something|I *convinced* Dad to try sushi.",
+"select|v.|선택하다|to choose|*Select* your favorite character.",
+"steady|adj.|꾸준한, 흔들림 없는|firm; not changing|Keep a *steady* pace.",
+"occur|v.|일어나다, 발생하다|to happen|Earthquakes *occur* often in Japan.",
+"mysterious|adj.|신비한, 이상한|strange and hard to explain|A *mysterious* letter arrived.",
+"tradition|n.|전통|a custom passed down|Eating rice cake soup is a New Year *tradition*.",
+"damage|n.|피해, 손상|harm done to something|The storm caused a lot of *damage*.",
+"typical|adj.|전형적인, 보통의|normal; usual|A *typical* school day starts at eight.",
+"challenge|n.|도전, 어려운 일|something hard that tests you|The final obstacle course is a real *challenge*.",
+"glance|v.|흘끗 보다|to look quickly|She *glanced* at the clock.",
+"imitate|v.|흉내 내다, 모방하다|to copy|Parrots can *imitate* human voices.",
+"transport|v.|수송하다|to carry from place to place|Trucks *transport* goods across the country.",
+"capable|adj.|할 수 있는, 유능한|able to do something well|You are *capable* of finishing this level.",
+"contain|v.|포함하다, 담고 있다|to have inside|This chest *contains* three diamonds.",
+"recent|adj.|최근의|happening not long ago|Did you see the *recent* update?",
+"represent|v.|대표하다, 나타내다|to stand for|The red dot *represents* your location.",
+"organize|v.|정리하다, 조직하다|to arrange in order|*Organize* your inventory by type.",
+"restore|v.|복구하다|to bring back to how it was|Drinking water will *restore* your energy.",
+"character|n.|등장인물, 성격|a person in a story; who someone is|My favorite *character* is the brave fox.",
+"indicate|v.|나타내다, 가리키다|to show or point out|The arrow *indicates* the exit.",
+"method|n.|방법|a way of doing something|What *method* did you use to solve it?",
+"absorb|v.|흡수하다|to soak up|A sponge can *absorb* a lot of water.",
+"defend|v.|방어하다|to protect from attack|*Defend* your base until sunrise.",
+"instinct|n.|본능|a natural feeling or behavior|Birds fly south by *instinct*.",
+"cooperate|v.|협력하다|to work together|The two teams had to *cooperate* to win.",
+"isolate|v.|고립시키다|to separate from others|The island was *isolated* by the flood.",
+"estimate|v.|어림잡다|to make a careful guess about a number|I *estimate* it will take ten minutes to finish this level.",
+"doubt|v.|의심하다|to feel unsure|I *doubt* it will rain today.",
+"detail|n.|세부 사항|a small part or fact|Look at every *detail* in the picture.",
+"demand|v.|요구하다|to ask for strongly|The customers *demanded* a refund.",
+"attitude|n.|태도|the way you think or feel about something|A positive *attitude* makes practice more fun.",
+"effect|n.|효과, 영향|a result|The medicine had a quick *effect*.",
+"splendid|adj.|훌륭한, 화려한|very good; beautiful|We had a *splendid* time at the beach.",
+"admire|v.|존경하다, 감탄하다|to respect or look at with pleasure|I *admire* how calm she stays in hard levels.",
+"observe|v.|관찰하다|to watch carefully|*Observe* how the guard moves before you sneak past.",
+"identify|v.|알아보다, 확인하다|to recognize who or what something is|Can you *identify* which player is the impostor?",
+"familiar|adj.|익숙한|well known|That song sounds *familiar*.",
+"react|v.|반응하다|to respond|How did she *react* to the news?",
+"describe|v.|묘사하다|to tell what something is like|*Describe* your dream house.",
+"flexible|adj.|유연한|able to bend easily; able to change|Gymnasts are very *flexible*.",
+"aware|adj.|알고 있는, 인식하는|knowing about something|Are you *aware* that the bridge is broken?",
+"source|n.|근원, 출처|where something comes from|The sun is a *source* of energy.",
+"attach|v.|붙이다, 첨부하다|to join one thing to another|*Attach* the wings to your glider.",
+"resource|n.|자원|something useful you can use|Wood and stone are important *resources*.",
+"curious|adj.|호기심 있는|wanting to know more|The *curious* cat opened the box.",
+"opportunity|n.|기회|a good chance|This is a great *opportunity* to learn.",
+"collapse|v.|무너지다|to fall down suddenly|The old tower *collapsed* in the storm.",
+"border|n.|국경, 경계|the line between two places|We crossed the *border* into Canada.",
+"responsible|adj.|책임 있는|in charge; trustworthy|You are *responsible* for feeding the fish.",
+"prepare|v.|준비하다|to get ready|*Prepare* your gear before the battle.",
+"conclude|v.|결론을 내리다|to decide after thinking about the facts|After testing every door, we *concluded* the key was in the basement.",
+"encounter|v.|마주치다|to meet unexpectedly|We *encountered* a bear on the trail.",
+"journey|n.|여행, 여정|a trip from one place to another|The *journey* to the final island took three days in the game.",
+"expand|v.|확장하다|to make bigger|We *expanded* our base with two new rooms.",
+"clever|adj.|영리한|quick to learn and understand|The *clever* crow used a stick to get food.",
+"labor|n.|노동|hard work|Building the pyramids took years of *labor*.",
+"decade|n.|10년|a period of ten years|My parents have lived here for a *decade*.",
+"region|n.|지역|an area|This *region* gets a lot of snow.",
+"nourish|v.|영양분을 주다|to feed and help grow|Good food *nourishes* the body.",
+"volunteer|v.|자원하다|to offer to help for free|I *volunteered* to clean the classroom.",
+"contribute|v.|기여하다|to give or add to something|Everyone *contributed* to the class project.",
+"approach|v.|다가가다|to come near|*Approach* the sleeping dragon very slowly.",
+"support|v.|지지하다, 받치다|to help; to hold up|My family *supports* my dreams.",
+"confident|adj.|자신감 있는|sure of yourself|She felt *confident* about her speech.",
+"positive|adj.|긍정적인; 확신하는|good or hopeful; sure|I'm *positive* I locked the door.",
+"function|n.|기능|what something is used for|The *function* of the heart is to pump blood.",
+"decrease|v.|줄어들다, 줄이다|to become smaller or less|Your health will *decrease* if you stay in the poison swamp.",
+"pursue|v.|추구하다, 뒤쫓다|to chase; to try to reach|He *pursued* his dream of being a chef.",
+"independent|adj.|독립적인|not needing others|She is *independent* and makes her own lunch.",
+"amount|n.|양, 액수|how much of something there is|That's a huge *amount* of candy!",
+"achieve|v.|이루다, 달성하다|to reach a goal by effort|She *achieved* her goal of reading 20 books.",
+"suggest|v.|제안하다|to offer an idea|I *suggest* we take a break.",
+"wisdom|n.|지혜|good judgment from experience|Grandpa shared his *wisdom* with us.",
+"avoid|v.|피하다|to stay away from something|*Avoid* the red lava blocks or you will respawn.",
+"faint|adj.|희미한|weak; not clear|We heard a *faint* noise in the attic.",
+"determine|v.|알아내다, 결정하다|to find out or decide|Roll the dice to *determine* who goes first.",
+"process|n.|과정|a series of steps|Making bread is a long *process*.",
+"reveal|v.|드러내다, 밝히다|to show something hidden|The magician *revealed* the card.",
+"narrate|v.|이야기하다, 서술하다|to tell a story|The old man *narrated* the tale.",
+"prevent|v.|막다, 예방하다|to stop from happening|Brushing *prevents* cavities.",
+"communicate|v.|소통하다|to share information or ideas|Teammates *communicate* with the chat.",
+"enormous|adj.|거대한|extremely big|An *enormous* dragon flew over the castle.",
+"complex|adj.|복잡한|having many connected parts|The maze is too *complex* to solve quickly.",
+"odor|n.|냄새|a smell|A strange *odor* came from the fridge.",
+"remote|adj.|외딴, 먼|far away|They live in a *remote* village.",
+"ordinary|adj.|평범한|normal; not special|It was just an *ordinary* day.",
+"anxious|adj.|불안한, 걱정하는|worried and nervous|I felt *anxious* before the test.",
+"extinct|adj.|멸종된|no longer existing|Dinosaurs have been *extinct* for millions of years.",
+"investigate|v.|조사하다|to look into something carefully|Our detective team *investigated* the mysterious noise.",
+"escape|v.|탈출하다|to get free|We *escaped* the prison just in time.",
+"operate|v.|작동하다, 수술하다|to work or run|Can you *operate* this machine?",
+"shelter|n.|피난처, 보호소|a place that keeps you safe|Build a *shelter* before night falls.",
+"startle|v.|깜짝 놀라게 하다|to surprise suddenly|The loud bang *startled* the baby.",
+"numerous|adj.|수많은|very many|There are *numerous* stars in the sky.",
+"compete|v.|경쟁하다|to try to win against others|Twenty players *compete* in each round.",
+"symbol|n.|상징|a sign that stands for something|The heart is a *symbol* of love.",
+"purpose|n.|목적|the reason for something|What is the *purpose* of this button?",
+"migrate|v.|이동하다, 이주하다|to move to another place for a season|Geese *migrate* south in winter.",
+"struggle|v.|애쓰다, 분투하다|to try hard with difficulty|I *struggled* to open the jar.",
+"donate|v.|기부하다|to give to help others|We *donated* old clothes to the shelter.",
+"talent|n.|재능|a natural ability|She has a *talent* for drawing.",
+"preserve|v.|보존하다|to keep safe from harm or change|We must *preserve* the forest.",
+"compare|v.|비교하다|to look at how things are alike or different|Let's *compare* our scores after the race.",
+"benefit|n.|이익, 혜택|something good you get|One *benefit* of reading is a bigger vocabulary.",
+"capture|v.|붙잡다, 포착하다|to catch|Our team *captured* the enemy flag.",
+"depend|v.|의존하다, ~에 달려 있다|to need or rely on|Plants *depend* on sunlight.",
+"evidence|n.|증거|facts that show something is true|The muddy footprints were *evidence* that someone had been in the room.",
+"produce|v.|생산하다|to make|This farm *produces* apples.",
+"similar|adj.|비슷한|almost the same|Our avatars look *similar* because we wear the same hat.",
+"unique|adj.|독특한, 유일한|one of a kind|Every snowflake is *unique*.",
+"declare|v.|선언하다|to say something officially|The judge *declared* our team the winner.",
+"approve|v.|승인하다, 찬성하다|to say yes to something|Mom *approved* my plan for the weekend.",
+"sequence|n.|순서, 연속|the order things happen in|Press the buttons in the right *sequence* to open the gate.",
+"examine|v.|조사하다, 검사하다|to look at closely|The doctor *examined* my sore arm.",
+"delay|n.|지연|a wait; being late|The flight had a two-hour *delay*.",
+"possess|v.|소유하다|to own or have|The wizard *possesses* a magic wand.",
+"spectacular|adj.|장관인, 멋진|amazing to see|The view from the mountain was *spectacular*.",
+"separate|v.|분리하다|to keep apart|*Separate* the whites from the colored clothes.",
+"community|n.|공동체, 지역 사회|a group of people who live or work together|Our *community* cleaned up the park.",
+"inspect|v.|점검하다|to look at carefully|The officer *inspected* the car.",
+"rival|n.|경쟁자|someone you compete with|Our *rival* school won last year.",
+"superior|adj.|우수한|better than others|This sword is *superior* to the old one.",
+"comfort|v.|위로하다|to make someone feel better|She *comforted* her little brother when he cried.",
+"predict|v.|예측하다|to say what will happen in the future|Can you *predict* which team will win?",
+"strategy|n.|전략|a plan to win|Our *strategy* is to defend first.",
+"budget|n.|예산|a plan for spending money|We have a *budget* of 50 dollars for the party.",
+"task|n.|일, 과제|a job to do|Your first *task* is to find the key.",
+"gather|v.|모으다, 모이다|to bring together|*Gather* wood before it gets dark.",
+"recover|v.|회복하다|to get better|He *recovered* from the flu quickly.",
+"obey|v.|따르다, 복종하다|to follow orders|The dog *obeys* every command.",
+"vacant|adj.|비어 있는|empty|The house next door is *vacant*.",
+"fragile|adj.|깨지기 쉬운|easily broken|The box says *fragile*, so be careful.",
+"feature|n.|특징, 기능|an important part|The best *feature* of this phone is its camera.",
+"intend|v.|의도하다|to plan to do|I *intend* to finish my homework first.",
+"device|n.|장치, 기기|a machine or tool|A phone is a useful *device*.",
+"distract|v.|산만하게 하다|to take attention away|Music *distracts* me when I do math.",
+"weary|adj.|지친|very tired|The *weary* travelers rested by the fire.",
+"previous|adj.|이전의|coming before|I finally beat my *previous* high score!",
+"divide|v.|나누다|to split into parts|*Divide* the pizza into eight slices.",
+"schedule|n.|일정|a plan of times|What's on your *schedule* today?",
+"brilliant|adj.|훌륭한, 눈부신|very smart or very bright|That was a *brilliant* idea!",
+"injury|n.|부상|harm to the body|He had a knee *injury* from soccer.",
+"oppose|v.|반대하다|to be against|Many people *opposed* the new rule.",
+"supply|n.|공급, 비축량|an amount ready to use|We have a big *supply* of food.",
+"manage|v.|관리하다, 해내다|to control; to succeed in doing|She *managed* to finish on time.",
+"frustrate|v.|좌절시키다|to make someone upset when they can't do something|The hard puzzle *frustrated* me.",
+"repair|v.|수리하다|to fix|Dad *repaired* the broken chair.",
+"fasten|v.|매다, 고정하다|to attach firmly|*Fasten* your seatbelt.",
+"interrupt|v.|방해하다, 끼어들다|to stop someone while they are talking|Please don't *interrupt* me.",
+"participate|v.|참여하다|to take part|Everyone *participated* in the race.",
+"celebrate|v.|축하하다|to do something fun for a special event|We *celebrated* Grandma's birthday with cake.",
+"include|v.|포함하다|to have something as a part|The bundle *includes* a hat, a sword, and a pet.",
+"delicate|adj.|섬세한, 깨지기 쉬운|easily broken; fine|Be gentle with the *delicate* glass.",
+"eliminate|v.|제거하다, 탈락시키다|to remove or get rid of|Two players were *eliminated* in round one.",
+"pollute|v.|오염시키다|to make dirty|Factories can *pollute* rivers.",
+"vivid|adj.|생생한, 선명한|very bright or clear|I had a *vivid* dream about flying over a city of blocks.",
+"recall|v.|기억해 내다|to remember|I can't *recall* his name.",
+"combine|v.|결합하다|to put together|*Combine* two potions to make a stronger one.",
+"protect|v.|보호하다|to keep safe|Helmets *protect* your head.",
+"obstacle|n.|장애물|something in the way|Jump over each *obstacle* to win.",
+"protest|v.|항의하다|to say strongly you don't agree|Students *protested* the shorter lunch.",
+"impact|n.|영향, 충격|a strong effect|Social media has a big *impact* on teens.",
+"exceed|v.|넘다, 초과하다|to go beyond|Don't *exceed* the speed limit.",
+"mischief|n.|장난|playful bad behavior|The kittens got into *mischief*.",
+"consider|v.|고려하다, 생각해 보다|to think carefully about|*Consider* both choices before you pick.",
+"alert|adj.|경계하는, 기민한|watching carefully and ready|Stay *alert* — zombies come out at night.",
+"magnificent|adj.|웅장한, 멋진|very beautiful or grand|The palace was *magnificent*.",
+"develop|v.|발달하다, 개발하다|to grow or create over time|The team *developed* a new game.",
+"vanish|v.|사라지다|to disappear suddenly|The ghost *vanished* into the wall.",
+"limit|n.|제한, 한계|the most allowed|There's a time *limit* of one hour.",
+"wealthy|adj.|부유한|rich|The *wealthy* merchant bought the castle.",
+"environment|n.|환경|the world around us|Recycling helps protect the *environment*.",
+"inspire|v.|영감을 주다|to fill with a wish to do something|Her story *inspired* me to start a garden.",
+"persist|v.|계속하다, 고집하다|to keep going|If you *persist*, you will get better.",
+"distance|n.|거리|how far apart things are|The *distance* to the next town is ten miles.",
+"urgent|adj.|긴급한|needing attention right away|This is an *urgent* message.",
+"annual|adj.|매년의, 연례의|happening once a year|Our *annual* family trip is in July.",
+"explore|v.|탐험하다|to travel to discover|Let's *explore* the cave.",
+"hesitate|v.|망설이다|to pause because you are unsure|Don't *hesitate* — jump before the platform falls!",
+"desire|n.|욕구, 바람|a strong wish|He had a *desire* to travel the world.",
+"discover|v.|발견하다|to find for the first time|We *discovered* a secret room.",
+"stable|adj.|안정된|steady; not likely to fall|Make sure the ladder is *stable*.",
+"moist|adj.|촉촉한|slightly wet|The cake was soft and *moist*.",
+"neutral|adj.|중립적인|not taking sides|Switzerland stayed *neutral* in the war.",
+"rare|adj.|드문, 희귀한|not common; hard to find|A golden pet is so *rare* that only a few players have one.",
+"display|v.|전시하다, 보여주다|to show|The museum *displays* dinosaur bones.",
+"legend|n.|전설|an old story; a famous person|The *legend* says a dragon lives in the lake.",
+"harvest|n.|수확|the gathering of crops|The farmers celebrated the fall *harvest*.",
+"fortunate|adj.|운이 좋은|lucky|We were *fortunate* to get the last tickets.",
+"balance|n.|균형|being steady without falling|Keep your *balance* on the narrow beam.",
+"loyal|adj.|충성스러운|faithful|My dog is *loyal* and follows me everywhere.",
+"occasion|n.|때, 행사|a special event or time|A wedding is a happy *occasion*.",
+"require|v.|필요로 하다|to need|This door *requires* a blue key.",
+"destroy|v.|파괴하다|to ruin completely|The meteor *destroyed* the whole village.",
+"guarantee|v.|보장하다|to promise for sure|I *guarantee* you'll love this game.",
+"wander|v.|돌아다니다, 헤매다|to move around without a plan|We *wandered* through the market.",
+"hazard|n.|위험 요소|a danger|Ice on the road is a *hazard*.",
+"advantage|n.|유리한 점, 이점|something that helps you succeed|Being tall is an *advantage* in basketball.",
+"remark|n.|발언, 말|something said|His rude *remark* hurt her feelings.",
+"expedition|n.|탐험, 원정|a long trip to explore|The *expedition* reached the North Pole.",
+"gigantic|adj.|거대한|extremely large|A *gigantic* wave hit the beach.",
+"arrange|v.|정리하다, 준비하다|to put in order|*Arrange* the books from tallest to shortest.",
+"nervous|adj.|긴장한|worried and uneasy|I was *nervous* on my first day.",
+"survive|v.|살아남다|to stay alive through danger|Only three players *survived* the flood.",
+"obtain|v.|얻다|to get|You can *obtain* a key by finishing the quest.",
+"accomplish|v.|성취하다, 해내다|to finish something successfully|We *accomplished* every quest before dinner.",
+"reward|n.|보상|something given for doing well|The *reward* for this quest is 500 coins.",
+"accuse|v.|비난하다, 고발하다|to say someone did something wrong|Don't *accuse* him without proof.",
+"burden|n.|짐, 부담|a heavy load or hard duty|Carrying all the bags was a *burden*.",
+"promote|v.|홍보하다, 승진시키다|to support; to raise in rank|She was *promoted* to team captain.",
+"reduce|v.|줄이다|to make smaller|*Reduce* the noise, please.",
+"humble|adj.|겸손한|not proud|Even after winning, she stayed *humble*.",
+"ancient|adj.|아주 오래된, 고대의|very, very old|We found an *ancient* temple hidden in the jungle map.",
+"detect|v.|감지하다, 발견하다|to notice or find|The sensor can *detect* movement.",
+"grateful|adj.|감사하는|thankful|I'm *grateful* for your help.",
+"harsh|adj.|가혹한, 거친|rough or cruel|The *harsh* winter killed many plants.",
+"provide|v.|제공하다|to give|The school *provides* free breakfast.",
+"signal|n.|신호|a sign that sends a message|Wait for my *signal* to start.",
+"cautious|adj.|조심스러운|careful to avoid danger|Be *cautious* when you cross the broken bridge.",
+"confuse|v.|혼란스럽게 하다|to make something hard to understand|The tricky map *confused* everyone.",
+"courage|n.|용기|bravery|It took *courage* to jump off the high dive.",
+"refuse|v.|거절하다|to say no|The cat *refused* to take a bath.",
+"equal|adj.|같은, 동등한|the same in size or value|Cut the cake into *equal* pieces.",
+"climate|n.|기후|the usual weather of a place|The desert has a hot, dry *climate*.",
+"shortage|n.|부족|not having enough|There's a *shortage* of wood on this server.",
+"attempt|n.|시도|a try|I beat the boss on my third *attempt*.",
+"available|adj.|이용 가능한|ready to be used|The new skin is *available* in the shop today.",
+"scarce|adj.|부족한, 드문|hard to find; not enough|Water is *scarce* in the desert.",
+"sturdy|adj.|튼튼한|strong and solid|Build a *sturdy* bridge.",
+"patient|adj.|참을성 있는|able to wait calmly|Be *patient*; the cookies are almost done.",
+"inform|v.|알리다|to tell|Please *inform* me if anything changes.",
+"emerge|v.|나타나다|to come out|A butterfly *emerged* from the cocoon.",
+"variety|n.|다양함|many different kinds|The store has a *variety* of snacks.",
+"invade|v.|침입하다, 침략하다|to enter by force|Aliens *invaded* the city in the movie.",
+"launch|v.|발사하다, 시작하다|to send off; to start|They *launched* the rocket at dawn.",
+"effort|n.|노력|hard work or trying|Building the castle took a lot of *effort*.",
+"overcome|v.|극복하다|to beat a problem|She *overcame* her fear of heights.",
+"emotion|n.|감정|a feeling|Joy and fear are strong *emotions*.",
+"recommend|v.|추천하다|to suggest as good|I *recommend* this book.",
+"generous|adj.|너그러운, 아낌없이 주는|happy to give or share|He was *generous* and gave his extra coins to a new player.",
+"swift|adj.|빠른|very fast|The *swift* rabbit escaped the fox.",
+"opinion|n.|의견|what someone thinks|In my *opinion*, pizza is the best food.",
+"origin|n.|기원, 출처|where something started|What is the *origin* of this word?",
+"event|n.|사건, 행사|something that happens|The big *event* starts at noon.",
+"essential|adj.|필수적인|absolutely needed|Water is *essential* for life.",
+"assist|v.|돕다|to help|Can you *assist* me with this puzzle?",
+"construct|v.|건설하다|to build|We *constructed* a treehouse out of planks.",
+"blend|v.|섞다, 조화되다|to mix together|*Blend* the bananas and milk to make a smoothie.",
+"connect|v.|연결하다|to join together|*Connect* the wires to turn on the light.",
+"invent|v.|발명하다|to create something new|Who *invented* the light bulb?",
+"opponent|n.|상대, 적수|someone you play against|My *opponent* was very fast.",
+"triumph|n.|승리, 큰 성공|a great victory|Winning the final was a *triumph*.",
+"decline|v.|거절하다; 줄어들다|to say no politely; to get smaller|She *declined* the invitation because she was busy.",
+"improve|v.|향상시키다|to make better|Practice will *improve* your skills.",
+"behavior|n.|행동|the way someone acts|The puppy's *behavior* got better after training.",
+"creative|adj.|창의적인|good at making new things or ideas|She built a *creative* house shaped like a giant shoe.",
+"eager|adj.|몹시 하고 싶어 하는|wanting very much to do something|My friends were *eager* to try the new update.",
+"ridiculous|adj.|우스꽝스러운|silly; foolish|That hat looks *ridiculous*!",
+"peculiar|adj.|이상한, 독특한|strange; unusual|The soup had a *peculiar* taste.",
+"exhausted|adj.|기진맥진한|extremely tired|After the hike, we were *exhausted*.",
+"encourage|v.|격려하다|to give hope or support|My coach *encourages* me to keep trying.",
+"habitat|n.|서식지|the natural home of an animal|The polar bear's *habitat* is the Arctic.",
+"secure|adj.|안전한|safe; firmly fixed|Make sure the rope is *secure*.",
+"minor|adj.|사소한, 작은|small or less important|It's only a *minor* scratch.",
+"frequent|adj.|잦은, 빈번한|happening often|*Frequent* saving keeps you from losing your progress.",
+"respond|v.|응답하다|to answer|She didn't *respond* to my message.",
+"severe|adj.|심각한, 극심한|very bad or serious|A *severe* storm is coming.",
+"panic|v.|당황하다|to suddenly feel great fear|Don't *panic* — we have a plan.",
+"reject|v.|거부하다|to not accept|The editor *rejected* my story.",
+"scatter|v.|흩어지다, 흩뿌리다|to spread around|The birds *scattered* when the dog barked.",
+"outcome|n.|결과|how something ends|Nobody could predict the *outcome* of the game.",
+"barrier|n.|장벽, 장애물|something that blocks the way|A wall of ice formed a *barrier* across the path.",
+"permanent|adj.|영구적인|lasting forever|This marker is *permanent*.",
+"fierce|adj.|사나운, 격렬한|wild and strong|The *fierce* wolf guarded its den.",
+"incredible|adj.|놀라운, 믿기 힘든|amazing; hard to believe|The fireworks were *incredible*.",
+"precious|adj.|귀중한|very valuable|These family photos are *precious* to me.",
+"summary|n.|요약|a short version of the main points|Write a *summary* of the chapter.",
+"risk|n.|위험|a chance of danger|Don't take a *risk* near the edge.",
+"tremendous|adj.|엄청난|very large or great|The team made a *tremendous* effort.",
+"monitor|v.|감시하다, 관찰하다|to watch over|Nurses *monitor* patients all night.",
+"rescue|v.|구조하다|to save from danger|Firefighters *rescued* the kitten.",
+"portion|n.|부분, 몫|a part or share|I ate a small *portion* of the pie.",
+"glimpse|n.|잠깐 봄|a quick look|I caught a *glimpse* of the rare bird.",
+"accurate|adj.|정확한|correct in every detail|Your jump has to be *accurate* to land on the tiny block.",
+"prohibit|v.|금지하다|to forbid by rule|Running is *prohibited* near the pool.",
+"announce|v.|발표하다|to tell people officially|The principal *announced* a snow day.",
+"deserve|v.|~을 받을 만하다|to have earned something|You *deserve* a break after all that work.",
+"calculate|v.|계산하다|to find an answer using math|*Calculate* how many coins you need.",
+"suspect|v.|의심하다|to think something is likely, often bad|I *suspect* my brother ate the cookies.",
+"argue|v.|말다툼하다, 주장하다|to disagree with words|My brothers *argue* about whose turn it is.",
+"permit|v.|허락하다|to allow|Pets are not *permitted* in the store.",
+"extend|v.|연장하다, 늘이다|to make longer|Can we *extend* the game by ten minutes?",
+"boast|v.|자랑하다|to talk too proudly about yourself|He *boasted* about his rare pet all day.",
+"release|v.|풀어주다, 공개하다|to let go; to make available|The game will be *released* in May."
+]},
+ {id:"m", name:"중학교", sub:"Middle School", icon:"🔥", data:[
+"complement|v.|보완하다|to go well with|The sauce *complements* the chicken.",
+"accelerate|v.|가속하다|to speed up|The car *accelerated* down the hill.",
+"individual|n.|개인|a single person|Each *individual* has a vote.",
+"impulse|n.|충동|a sudden urge|I bought the toy on *impulse*.",
+"remedy|n.|치료법, 해결책|a cure|Honey is a *remedy* for sore throats.",
+"trigger|v.|촉발하다|to cause to start|Stepping on the plate *triggers* the trap.",
+"resemble|v.|닮다|to look like|She *resembles* her mother.",
+"perspective|n.|관점|a way of seeing things|Try to see it from your sister's *perspective*.",
+"dilemma|n.|딜레마, 진퇴양난|a hard choice|I faced a *dilemma*: study or sleep?",
+"credible|adj.|믿을 수 있는|believable|We need a *credible* witness.",
+"convert|v.|변환하다|to change into another form|*Convert* the miles into kilometers.",
+"stimulate|v.|자극하다|to encourage activity|Puzzles *stimulate* the brain.",
+"obscure|adj.|잘 알려지지 않은, 모호한|not well known; unclear|He listens to *obscure* bands.",
+"compatible|adj.|호환되는, 잘 맞는|able to work together|This charger is not *compatible* with my phone.",
+"practical|adj.|실용적인|useful; sensible|Sneakers are more *practical* than heels.",
+"flourish|v.|번창하다|to grow well|The garden *flourished* in spring.",
+"abrupt|adj.|갑작스러운|sudden and unexpected|The game came to an *abrupt* end when the power went out.",
+"preliminary|adj.|예비의|coming before the main part|The *preliminary* round starts today.",
+"radical|adj.|급진적인, 근본적인|extreme; complete|The new design is a *radical* change.",
+"diverse|adj.|다양한|made of many different kinds|Our class is *diverse*; students come from many countries.",
+"justify|v.|정당화하다|to give good reasons for|Can you *justify* your answer?",
+"reform|n.|개혁|a change to improve|The school needs *reform*.",
+"acknowledge|v.|인정하다|to admit or recognize|He *acknowledged* that he made a mistake.",
+"authentic|adj.|진짜의|real; not fake|This is an *authentic* Korean recipe.",
+"absurd|adj.|터무니없는|silly and unreasonable|It's *absurd* to wear a coat in July.",
+"correspond|v.|일치하다; 편지를 주고받다|to match; to write letters|The numbers *correspond* to the pages.",
+"pioneer|n.|개척자|one of the first to do something|She was a *pioneer* in computer science.",
+"enable|v.|가능하게 하다|to make able|The ladder *enabled* us to reach the roof.",
+"assess|v.|평가하다|to judge or measure|The teacher *assessed* our reading level.",
+"alter|v.|바꾸다|to change|The tailor *altered* my pants.",
+"tolerate|v.|참다, 용인하다|to put up with|I can't *tolerate* loud chewing.",
+"clarify|v.|명확하게 하다|to make clear|Can you *clarify* the instructions?",
+"incorporate|v.|포함하다, 통합하다|to include as part|*Incorporate* the new words into your essay.",
+"widespread|adj.|널리 퍼진|happening in many places|The flu is *widespread* this winter.",
+"maintain|v.|유지하다|to keep something the same|It is hard to *maintain* a long streak.",
+"criteria|n.|기준|standards for judging|What are the *criteria* for winning?",
+"boundary|n.|경계|a line that marks a limit|The river forms the *boundary* between the states.",
+"recur|v.|되풀이되다|to happen again|The problem keeps *recurring*.",
+"intervene|v.|개입하다|to step in|The teacher *intervened* to stop the fight.",
+"exhibit|v.|전시하다, 보이다|to show|The patient *exhibited* signs of a cold.",
+"priority|n.|우선 사항|something more important|Safety is our top *priority*.",
+"undergo|v.|겪다|to go through|He *underwent* surgery last week.",
+"context|n.|문맥, 맥락|the situation around something|Use *context* clues to guess the word.",
+"demonstrate|v.|증명하다, 보여주다|to show clearly|The teacher *demonstrated* how to use the tool.",
+"designate|v.|지정하다|to name for a purpose|This area is *designated* for parking.",
+"terminate|v.|종료하다|to end|The contract was *terminated*.",
+"abandon|v.|버리다, 포기하다|to leave behind completely|The crew had to *abandon* the sinking ship.",
+"scheme|n.|계획, 음모|a plan, often secret|The villain had a *scheme* to steal the gold.",
+"embrace|v.|포옹하다; 받아들이다|to hug; to accept gladly|She *embraced* the new challenge.",
+"intuition|n.|직감|knowing without thinking|My *intuition* told me to turn left.",
+"apparent|adj.|분명한|easy to see or understand|It was *apparent* that she was tired.",
+"conflict|n.|갈등, 충돌|a fight or disagreement|The story's main *conflict* is between two brothers.",
+"reverse|v.|뒤집다, 반대로 하다|to go the opposite way|*Reverse* the car out of the driveway.",
+"innovate|v.|혁신하다|to make new changes|Companies must *innovate* to survive.",
+"parallel|adj.|평행한|side by side and equally distant|Draw two *parallel* lines.",
+"diminish|v.|줄어들다|to become less|The pain *diminished* over time.",
+"facilitate|v.|용이하게 하다|to make easier|Maps *facilitate* travel.",
+"assume|v.|가정하다, 추정하다|to believe without proof|Don't *assume* everyone knows the rules.",
+"logical|adj.|논리적인|making sense|That's a *logical* answer.",
+"subsequent|adj.|그 다음의|coming after|*Subsequent* tests were easier.",
+"deliberate|adj.|고의적인, 신중한|done on purpose|That was a *deliberate* foul.",
+"intrigue|v.|흥미를 일으키다|to make curious|The mystery *intrigued* me.",
+"significant|adj.|상당한, 중요한|large or important enough to notice|The update made a *significant* change to the map.",
+"despair|n.|절망|loss of all hope|He felt *despair* when his team lost.",
+"cultivate|v.|경작하다, 기르다|to grow; to develop|Reading *cultivates* imagination.",
+"forbid|v.|금지하다|to not allow|My parents *forbid* phones at dinner.",
+"resolve|v.|해결하다|to find an answer to a problem|We *resolved* the argument by taking turns.",
+"dynamic|adj.|역동적인|full of energy and change|She is a *dynamic* leader.",
+"disrupt|v.|방해하다, 지장을 주다|to interrupt or disturb|The fire alarm *disrupted* the class.",
+"compose|v.|구성하다, 작곡하다|to create; to make up|Mozart *composed* music as a child.",
+"tension|n.|긴장|stress; tightness|You could feel the *tension* before the final round.",
+"surplus|n.|잉여, 과잉|an extra amount|We have a *surplus* of apples.",
+"render|v.|~하게 만들다|to cause to become|The news *rendered* him speechless.",
+"valid|adj.|타당한, 유효한|reasonable and acceptable|That is a *valid* reason to be late.",
+"mature|adj.|성숙한|grown-up|She is very *mature* for her age.",
+"revise|v.|수정하다|to change and improve|*Revise* your essay before turning it in.",
+"resist|v.|저항하다, 참다|to fight against|I couldn't *resist* the cookies.",
+"precise|adj.|정밀한, 정확한|exact and careful|You need *precise* timing to dodge the laser.",
+"distribute|v.|나누어 주다|to give out|The teacher *distributed* the tests.",
+"infer|v.|추론하다|to conclude from clues|What can you *infer* from the picture?",
+"external|adj.|외부의|outside|The *external* walls are made of brick.",
+"liberty|n.|자유|freedom|The Statue of *Liberty* is in New York.",
+"civil|adj.|시민의; 예의 바른|of citizens; polite|Please keep the discussion *civil*.",
+"ample|adj.|충분한|more than enough|There is *ample* space in the trunk.",
+"conduct|v.|실시하다, 지휘하다|to carry out; to lead|We *conducted* an experiment in class.",
+"proclaim|v.|선언하다|to announce publicly|The king *proclaimed* a holiday.",
+"negotiate|v.|협상하다|to discuss to reach an agreement|I *negotiated* a later bedtime.",
+"transform|v.|변형시키다, 완전히 바꾸다|to change completely|The potion *transformed* the frog into a prince.",
+"confirm|v.|확인하다|to make sure something is true|Please *confirm* your email address.",
+"conceal|v.|숨기다|to hide|He *concealed* the gift behind his back.",
+"consist|v.|구성되다|to be made of|The team *consists* of five players.",
+"assert|v.|주장하다|to state strongly|She *asserted* that she was innocent.",
+"define|v.|정의하다|to explain the meaning|Can you *define* this word?",
+"random|adj.|무작위의|without a pattern|The game picks a *random* map.",
+"conform|v.|순응하다|to follow the usual rules|Some students don't want to *conform*.",
+"distort|v.|왜곡하다|to twist out of shape or truth|The mirror *distorted* my face.",
+"integrate|v.|통합하다|to combine into one|The app *integrates* music and video.",
+"depict|v.|묘사하다|to show in a picture or words|The painting *depicts* a stormy sea.",
+"incentive|n.|동기, 장려책|something that motivates|Extra recess is an *incentive* to finish early.",
+"adequate|adj.|충분한, 적당한|good enough|Make sure you get *adequate* sleep.",
+"cumulative|adj.|누적되는|growing by adding up|The final test is *cumulative*.",
+"ignite|v.|불을 붙이다|to set on fire|A spark *ignited* the dry grass.",
+"trait|n.|특성|a quality|Kindness is her best *trait*.",
+"theory|n.|이론|an idea that explains something|Darwin's *theory* explains evolution.",
+"sustain|v.|지속하다|to keep going|Food *sustains* life.",
+"legitimate|adj.|합법적인, 정당한|legal; reasonable|Is that a *legitimate* excuse?",
+"yield|v.|산출하다; 양보하다|to produce; to give way|*Yield* to cars on the right.",
+"adjacent|adj.|인접한|next to|Our rooms are *adjacent* to each other.",
+"transmit|v.|전송하다, 전염시키다|to send or pass on|Mosquitoes can *transmit* diseases.",
+"enhance|v.|향상시키다|to improve|The new graphics *enhance* the game.",
+"reliable|adj.|믿을 만한|able to be trusted|She is a *reliable* teammate who always shows up.",
+"factor|n.|요인|something that affects a result|Weather was a *factor* in our loss.",
+"intricate|adj.|복잡한|having many small parts|The rug has an *intricate* pattern.",
+"prior|adj.|이전의|earlier|Do you have any *prior* experience?",
+"aptitude|n.|소질, 적성|a natural ability|He has an *aptitude* for music.",
+"imply|v.|암시하다|to suggest without saying directly|Are you *implying* that I'm wrong?",
+"collaborate|v.|협력하다|to work together|We *collaborated* to build a huge city together.",
+"prosper|v.|번영하다|to do well|The town *prospered* after the railroad came.",
+"illustrate|v.|설명하다, 삽화를 넣다|to explain with examples or pictures|She *illustrated* her point with a story.",
+"coordinate|v.|조정하다, 조직화하다|to organize parts to work together|We *coordinated* our attack with the other team.",
+"genuine|adj.|진짜의, 진실한|real; sincere|Her smile was *genuine*.",
+"insist|v.|고집하다, 주장하다|to demand firmly|He *insisted* on paying.",
+"implement|v.|실행하다|to put into action|The school *implemented* a new schedule.",
+"enthusiasm|n.|열정|great excitement|She shows *enthusiasm* for science.",
+"speculate|v.|추측하다|to guess without facts|Fans *speculated* about the next update.",
+"appropriate|adj.|적절한|right for the situation|Jeans are not *appropriate* for the wedding.",
+"anticipate|v.|예상하다, 미리 대비하다|to expect something before it happens|Our team *anticipated* the attack and built a wall.",
+"defect|n.|결함|a flaw|The phone had a *defect* in the screen.",
+"mediate|v.|중재하다|to help two sides agree|Mom *mediated* the argument.",
+"confront|v.|맞서다|to face boldly|She *confronted* the bully.",
+"constant|adj.|끊임없는|happening all the time|The *constant* noise gave me a headache.",
+"voluntary|adj.|자발적인|done by choice|The after-school club is *voluntary*.",
+"retain|v.|유지하다|to keep|Sponges *retain* water.",
+"summon|v.|소환하다|to call to come|The wizard *summoned* a dragon.",
+"spontaneous|adj.|즉흥적인|done without planning|We took a *spontaneous* trip to the beach.",
+"exaggerate|v.|과장하다|to make something sound bigger than it is|He *exaggerated* when he said he won a hundred times.",
+"persuade|v.|설득하다|to get someone to agree with you|I *persuaded* my mom to let me play ten more minutes.",
+"consent|n.|동의|permission|You need a parent's *consent* to go on the trip.",
+"rational|adj.|이성적인|based on reason|Let's make a *rational* decision.",
+"assemble|v.|조립하다, 모으다|to put together; to gather|We *assembled* the new desk.",
+"inferior|adj.|열등한|lower in quality|This copy is *inferior* to the original.",
+"concept|n.|개념|an idea|Gravity is a hard *concept* to explain.",
+"scope|n.|범위|the range covered|That question is outside the *scope* of this test.",
+"ensure|v.|보장하다, 확실히 하다|to make certain|*Ensure* the door is locked.",
+"profit|n.|이익|money gained|The lemonade stand made a small *profit*.",
+"distinguish|v.|구별하다|to see the difference|Can you *distinguish* the twins?",
+"incident|n.|사건|an event, often unpleasant|There was an *incident* in the hallway.",
+"initial|adj.|처음의|first|My *initial* plan didn't work.",
+"conscious|adj.|의식하는|aware; awake|He was *conscious* of everyone staring.",
+"interval|n.|간격|time or space between|Buses come at ten-minute *intervals*.",
+"barren|adj.|척박한, 황량한|unable to grow plants|The land was *barren* after the drought.",
+"acquire|v.|얻다, 습득하다|to get or gain|She *acquired* a new skill this summer.",
+"novel|adj.|새로운|new and unusual|That's a *novel* idea!",
+"approximate|adj.|대략의|close but not exact|The *approximate* cost is 20 dollars.",
+"deduce|v.|추론하다|to reach a conclusion by reasoning|From the clues, we *deduced* who did it.",
+"affect|v.|영향을 미치다|to change or influence|Lack of sleep can *affect* your mood.",
+"beneficial|adj.|유익한|helpful; good for you|Exercise is *beneficial* for your health.",
+"proportion|n.|비율|a part compared to the whole|A large *proportion* of students walk to school.",
+"regulate|v.|규제하다, 조절하다|to control by rules|The thermostat *regulates* the heat.",
+"threshold|n.|문턱, 기준점|a starting point; a doorway|She stood at the *threshold* of a new life.",
+"mechanism|n.|장치, 구조|the working parts of something|The lock has a simple *mechanism*.",
+"rigid|adj.|단단한, 엄격한|stiff; not flexible|The rules are too *rigid*.",
+"critical|adj.|비판적인; 매우 중요한|finding faults; very important|Water is *critical* to survival.",
+"provoke|v.|도발하다|to cause anger on purpose|Don't *provoke* the dog.",
+"temporary|adj.|일시적인|lasting only a short time|The speed boost is only *temporary*.",
+"decisive|adj.|결정적인, 단호한|settling something clearly|Her goal was the *decisive* moment of the game.",
+"assure|v.|장담하다, 안심시키다|to tell someone confidently|I *assure* you the bridge is safe.",
+"assign|v.|배정하다|to give a task|The coach *assigned* positions to each player.",
+"commit|v.|저지르다; 전념하다|to do something wrong; to promise fully|She *committed* to practicing every day.",
+"inevitable|adj.|피할 수 없는|sure to happen|With so much rain, flooding was *inevitable*.",
+"fertile|adj.|비옥한|able to produce crops|The valley has *fertile* soil.",
+"exclude|v.|제외하다|to leave out|Don't *exclude* anyone from the game.",
+"reside|v.|거주하다|to live in a place|They *reside* in Los Angeles.",
+"solitary|adj.|혼자의|alone|Tigers are *solitary* animals.",
+"contrast|n.|대조, 차이|a big difference between things|The bright town is a sharp *contrast* to the dark forest.",
+"phase|n.|단계|a stage|The moon goes through *phases*.",
+"feasible|adj.|실현 가능한|possible to do|Building a whole castle in one hour is not *feasible*.",
+"suppress|v.|억누르다|to hold back|I tried to *suppress* a laugh.",
+"ultimate|adj.|궁극의, 최고의|final; greatest|The *ultimate* goal is to win the championship.",
+"prompt|adj.|즉각적인|quick; on time|Thank you for your *prompt* reply.",
+"overwhelm|v.|압도하다|to be too much for|The amount of homework *overwhelmed* me.",
+"eloquent|adj.|웅변의, 유창한|speaking beautifully and clearly|He gave an *eloquent* speech.",
+"modify|v.|수정하다|to change slightly|We *modified* the recipe.",
+"contradict|v.|모순되다, 반박하다|to say the opposite|His actions *contradict* his words.",
+"integrity|n.|정직, 진실성|being honest and having strong values|A leader needs *integrity*.",
+"nuisance|n.|성가신 것|something annoying|The mosquitoes were a *nuisance*.",
+"attain|v.|달성하다|to reach or achieve|She *attained* the highest rank.",
+"deprive|v.|빼앗다|to take away something needed|Don't *deprive* yourself of sleep.",
+"amend|v.|수정하다|to change to improve|They *amended* the rules of the club.",
+"sufficient|adj.|충분한|enough|Do we have *sufficient* wood for the bridge?",
+"bias|n.|편견|unfair preference for one side|The judge must not show *bias*.",
+"persevere|v.|인내하다, 끝까지 하다|to keep going despite difficulty|If you *persevere*, you will succeed.",
+"recede|v.|물러나다|to move back|The flood waters slowly *receded*.",
+"vertical|adj.|수직의|straight up and down|Draw a *vertical* line.",
+"output|n.|생산량, 출력|amount produced|The factory doubled its *output*.",
+"maximum|n.|최대|the most possible|The *maximum* score is 100.",
+"evolve|v.|진화하다|to develop slowly|The game *evolved* over many updates.",
+"minimal|adj.|최소의|very small|The storm caused *minimal* damage.",
+"comply|v.|따르다, 준수하다|to obey a rule|All players must *comply* with the rules.",
+"derive|v.|얻다, 유래하다|to get from a source|Many English words are *derived* from Latin.",
+"interpret|v.|해석하다|to explain the meaning of something|How do you *interpret* the clue on the wall?",
+"evaluate|v.|평가하다|to judge the value of|*Evaluate* each choice carefully.",
+"alternative|n.|대안|another choice|Is there an *alternative* to driving?",
+"controversy|n.|논란|a public disagreement|The new rule caused a lot of *controversy*.",
+"simulate|v.|모의 실험하다|to imitate the conditions of|The game *simulates* flying a plane.",
+"adapt|v.|적응하다|to change to fit a new situation|Animals *adapt* to cold weather by growing thick fur.",
+"accessible|adj.|접근 가능한, 이용하기 쉬운|easy to reach or use|The library is *accessible* by bus.",
+"tactic|n.|전술|a planned action|Hiding was a smart *tactic*.",
+"symptom|n.|증상|a sign of illness|A fever is a *symptom* of the flu.",
+"generate|v.|생성하다|to produce|Windmills *generate* electricity.",
+"occupy|v.|차지하다|to fill or take up|The game *occupied* him all afternoon.",
+"conserve|v.|보존하다, 아끼다|to save; to protect|Turn off lights to *conserve* energy.",
+"verify|v.|확인하다, 입증하다|to check that something is true|*Verify* the password before saving.",
+"fundamental|adj.|근본적인|basic and important|Addition is a *fundamental* math skill.",
+"debate|n.|토론, 논쟁|a discussion between people who disagree|We had a *debate* about which game is better.",
+"bizarre|adj.|기이한|very strange|I had a *bizarre* dream about talking shoes.",
+"linger|v.|오래 머물다|to stay longer than expected|The smell of cookies *lingered* in the kitchen.",
+"prominent|adj.|두드러진, 유명한|easy to see; famous|She is a *prominent* scientist.",
+"distinct|adj.|뚜렷한, 별개의|clearly different|There is a *distinct* smell of smoke.",
+"grant|v.|주다, 허락하다|to give or allow|The genie *granted* him three wishes.",
+"destination|n.|목적지|the place you are going|Our *destination* is Seoul.",
+"foundation|n.|기초, 토대|the base|Reading is the *foundation* of learning.",
+"establish|v.|설립하다|to set up|The school was *established* in 1950.",
+"mere|adj.|단지 ~에 불과한|only; nothing more than|He was a *mere* child.",
+"aspect|n.|측면|one part or feature|Teamwork is an important *aspect* of the game.",
+"refine|v.|다듬다, 정제하다|to improve by small changes|She *refined* her drawing skills.",
+"passive|adj.|수동적인|not active|Don't be *passive* — speak up!",
+"deny|v.|부인하다|to say something is not true|He *denied* eating the cake.",
+"consequence|n.|결과|what happens because of an action|Skipping practice had a clear *consequence*: we lost.",
+"hypothesis|n.|가설|an idea you test to see if it is true|My *hypothesis* is that the plant will grow faster in sunlight.",
+"fragment|n.|조각|a small broken piece|We found *fragments* of an old vase.",
+"optimistic|adj.|낙관적인|hopeful|She is *optimistic* about the test.",
+"durable|adj.|내구성 있는|long-lasting|These boots are very *durable*.",
+"accumulate|v.|모으다, 쌓이다|to collect over time|Dust *accumulated* under the bed.",
+"crucial|adj.|매우 중요한|extremely important|Teamwork is *crucial* if you want to escape the prison.",
+"consume|v.|소비하다|to use up; to eat|This game *consumes* a lot of battery.",
+"initiate|v.|시작하다|to begin|She *initiated* the conversation.",
+"component|n.|구성 요소|a part of a larger whole|The engine has many *components*.",
+"compensate|v.|보상하다|to make up for|The company *compensated* us for the delay.",
+"sole|adj.|유일한|only one|He was the *sole* survivor.",
+"eligible|adj.|자격이 있는|allowed or qualified|You are *eligible* to vote at 18.",
+"equivalent|adj.|동등한|equal in value|One dollar is *equivalent* to 100 cents.",
+"coincidence|n.|우연의 일치|things happening together by chance|What a *coincidence* that we wore the same shirt!",
+"specific|adj.|구체적인|exact; particular|Can you be more *specific*?",
+"accommodate|v.|수용하다, 맞추다|to make room for; to adjust to|The hotel can *accommodate* 200 guests.",
+"hostile|adj.|적대적인|unfriendly|The crowd was *hostile* to the visiting team.",
+"vital|adj.|필수적인|very important|Sleep is *vital* for growth.",
+"impose|v.|부과하다, 강요하다|to force on someone|The city *imposed* a new tax.",
+"moderate|adj.|적당한, 온건한|not too much or too little|Exercise at a *moderate* pace.",
+"analyze|v.|분석하다|to study something closely to understand it|Let's *analyze* why we lost the last round.",
+"insight|n.|통찰력|deep understanding|The book gave me *insight* into history.",
+"expose|v.|노출시키다, 폭로하다|to uncover|Don't *expose* your skin to the sun too long.",
+"potential|n.|잠재력|possible ability|You have the *potential* to be great.",
+"objective|n.|목표|a goal|Our *objective* is to capture the flag.",
+"utilize|v.|활용하다|to use|*Utilize* every tool you have.",
+"restrict|v.|제한하다|to limit|The park *restricts* bikes on this trail.",
+"presume|v.|추정하다|to suppose|I *presume* you are hungry.",
+"literal|adj.|문자 그대로의|exact meaning of the words|\"It's raining cats and dogs\" is not *literal*.",
+"uniform|adj.|균일한|the same throughout|The tiles are *uniform* in size.",
+"discipline|n.|규율, 훈련|self-control; training|It takes *discipline* to practice every day.",
+"trivial|adj.|사소한|unimportant|Don't argue over *trivial* things.",
+"vague|adj.|모호한|not clear|His answer was *vague*.",
+"category|n.|범주|a group of similar things|Sort the words into each *category*.",
+"momentum|n.|추진력, 기세|force from moving; growing strength|The team gained *momentum* after the goal.",
+"formulate|v.|만들어 내다, 공식화하다|to create carefully|We *formulated* a plan to win.",
+"motivate|v.|동기를 부여하다|to make someone want to do something|Earning badges *motivates* me to keep practicing.",
+"gradual|adj.|점진적인|happening slowly|There was a *gradual* rise in temperature.",
+"characteristic|n.|특징|a typical quality|Stripes are a *characteristic* of zebras.",
+"exploit|v.|이용하다, 착취하다|to use unfairly|They *exploited* a bug to get free coins.",
+"obvious|adj.|명백한, 뻔한|easy to see or understand|The answer was *obvious* once I saw the picture.",
+"appreciate|v.|감사하다, 진가를 알다|to be thankful for; to value|I *appreciate* your help.",
+"precede|v.|앞서다|to come before|Thunder is *preceded* by lightning.",
+"irony|n.|아이러니, 반어|the opposite of what is expected|The *irony* is that the fire station burned down.",
+"prospect|n.|전망, 가능성|a chance of something happening|The *prospect* of summer break made us happy.",
+"proceed|v.|진행하다|to go on|Please *proceed* to the next room.",
+"devote|v.|바치다, 쏟다|to give time or effort to|She *devotes* every weekend to soccer.",
+"circumstance|n.|상황, 사정|a condition or fact|Under these *circumstances*, we should wait.",
+"immense|adj.|엄청난|extremely large|The ocean is *immense*.",
+"navigate|v.|길을 찾다, 항해하다|to find your way|Use the stars to *navigate*.",
+"dominant|adj.|지배적인|most powerful|The lion is the *dominant* animal here.",
+"aggressive|adj.|공격적인|ready to attack or fight|The *aggressive* goose chased us.",
+"cease|v.|중단하다|to stop|The rain finally *ceased*.",
+"interact|v.|상호작용하다|to act together|Kids *interact* with animals at the petting zoo.",
+"convey|v.|전달하다|to communicate|Her face *conveyed* her joy.",
+"abundant|adj.|풍부한|more than enough|Wood is *abundant* on this island, so building is easy.",
+"competent|adj.|유능한|having enough skill|He is a *competent* swimmer.",
+"deficient|adj.|부족한|lacking something needed|His diet is *deficient* in vitamins.",
+"ancestor|n.|조상|a family member from long ago|My *ancestors* came from Korea.",
+"influence|v.|영향을 주다|to change how someone thinks or acts|Friends can *influence* which games you like.",
+"supplement|n.|보충, 보충제|something added to complete|She takes a vitamin *supplement*.",
+"emphasize|v.|강조하다|to show that something is important|The teacher *emphasized* the importance of reading every day.",
+"automatic|adj.|자동의|working by itself|The doors are *automatic*.",
+"ambition|n.|야망|a strong wish to succeed|Her *ambition* is to become a pilot.",
+"unanimous|adj.|만장일치의|agreed by everyone|The vote was *unanimous*.",
+"immigrate|v.|이민 오다|to move into a new country|My grandparents *immigrated* to America.",
+"dedicate|v.|바치다, 헌신하다|to give fully to something|He *dedicated* his life to helping others.",
+"cite|v.|인용하다|to quote as proof|*Cite* your sources in the report.",
+"relevant|adj.|관련 있는|connected to the topic|Only include *relevant* facts.",
+"retrieve|v.|되찾아 오다|to get back|The dog *retrieved* the ball.",
+"considerable|adj.|상당한|large in amount|It took a *considerable* amount of time.",
+"obsolete|adj.|구식의, 더 이상 쓰이지 않는|no longer used|Floppy disks are *obsolete*.",
+"intense|adj.|강렬한|very strong|The heat was *intense*.",
+"finite|adj.|유한한|having limits|We have a *finite* amount of time.",
+"mutual|adj.|상호의|shared by both|We have a *mutual* friend.",
+"identical|adj.|똑같은|exactly the same|The twins wore *identical* shirts.",
+"compromise|n.|타협|an agreement where each side gives up something|We reached a *compromise*: one hour of games.",
+"subtle|adj.|미묘한|not obvious|There is a *subtle* difference in color.",
+"vulnerable|adj.|취약한, 공격받기 쉬운|easy to hurt or attack|Your base is *vulnerable* without a door.",
+"phenomenon|n.|현상|an event that can be observed|A rainbow is a natural *phenomenon*.",
+"anonymous|adj.|익명의|with no name given|An *anonymous* donor gave a million dollars.",
+"perceive|v.|인식하다|to notice or understand|How do others *perceive* you?",
+"commence|v.|시작하다|to begin|The ceremony will *commence* at noon.",
+"authority|n.|권한, 권위|the power to make decisions|The referee has *authority* on the field.",
+"invest|v.|투자하다|to put money or time into|She *invested* hours in her project.",
+"concentrate|v.|집중하다|to focus attention|I can't *concentrate* with the TV on.",
+"drastic|adj.|급격한, 과감한|extreme and sudden|We need *drastic* changes to win.",
+"efficient|adj.|효율적인|working well without wasting time or energy|Taking the shortcut is a more *efficient* route.",
+"allocate|v.|할당하다|to give out for a purpose|We *allocated* ten minutes for each speaker.",
+"capacity|n.|용량, 능력|the most something can hold; ability|The stadium has a *capacity* of 50,000.",
+"revolve|v.|회전하다|to go around|The Earth *revolves* around the sun.",
+"endure|v.|견디다|to put up with|They *endured* the cold for hours.",
+"bond|n.|유대, 결속|a close connection|The two sisters share a strong *bond*.",
+"collide|v.|충돌하다|to crash into|Two cars *collided* at the corner.",
+"extract|v.|추출하다, 뽑다|to pull out|The dentist *extracted* my tooth.",
+"keen|adj.|열망하는; 예리한|eager; sharp|Owls have *keen* eyesight.",
+"classify|v.|분류하다|to sort into groups|Scientists *classify* animals by type.",
+"core|n.|핵심|the central part|Honesty is at the *core* of friendship.",
+"tedious|adj.|지루한|boring and long|Copying the words was *tedious*.",
+"thorough|adj.|철저한|complete and careful|Do a *thorough* search of the room."
+]},
+ {id:"h", name:"고등학교", sub:"High School", icon:"⚡", data:[
+"nostalgia|n.|향수|longing for the past|Old songs fill me with *nostalgia*.",
+"versatile|adj.|다재다능한|able to do many different things|A *versatile* player can play any position.",
+"hinder|v.|방해하다|to make something harder to do|Lag can *hinder* your performance in a race.",
+"commodity|n.|상품, 원자재|a product that can be bought and sold|Oil is a valuable *commodity*.",
+"expedite|v.|신속히 처리하다|to speed up|Pay extra to *expedite* shipping.",
+"tangible|adj.|실체적인, 만질 수 있는|real; able to be touched|We need *tangible* results.",
+"insinuate|v.|넌지시 말하다|to hint something unpleasant|Are you *insinuating* that I lied?",
+"supersede|v.|대체하다|to replace|The new law *supersedes* the old one.",
+"relegate|v.|좌천시키다, 밀어내다|to move to a lower position|He was *relegated* to the bench.",
+"hamper|v.|방해하다|to slow down or block|Snow *hampered* the rescue.",
+"amass|v.|모으다, 축적하다|to collect a large amount|He *amassed* a huge collection of coins.",
+"deter|v.|단념시키다, 막다|to discourage from acting|Cameras *deter* thieves.",
+"inept|adj.|서투른|clumsy; lacking skill|He was *inept* at cooking.",
+"dissent|n.|반대 의견|disagreement with official views|The judge wrote a strong *dissent*.",
+"inadvertent|adj.|우연의, 의도치 않은|not on purpose|It was an *inadvertent* mistake.",
+"preoccupied|adj.|몰두한, 정신이 팔린|lost in thought|She was *preoccupied* with her test.",
+"coerce|v.|강압하다|to force by threats|He was *coerced* into signing.",
+"lethargic|adj.|무기력한|sluggish; without energy|The heat made us *lethargic*.",
+"eccentric|adj.|괴짜의, 별난|unusual in behavior|The *eccentric* artist wore two hats.",
+"disperse|v.|흩어지게 하다|to scatter|The crowd *dispersed* after the show.",
+"decipher|v.|해독하다|to figure out the meaning|Can you *decipher* this code?",
+"deride|v.|조롱하다|to mock|Critics *derided* the movie.",
+"validate|v.|입증하다, 인정하다|to confirm as valid|The results *validated* her theory.",
+"surpass|v.|능가하다|to go beyond|She *surpassed* her own record.",
+"viable|adj.|실행 가능한|workable|Is this plan *viable*?",
+"ideology|n.|이념|a set of beliefs|The two parties have different *ideologies*.",
+"retract|v.|철회하다|to take back|The newspaper *retracted* the story.",
+"conversely|adv.|반대로|in the opposite way|Some like heat; *conversely*, others prefer cold.",
+"nuance|n.|미묘한 차이|a subtle difference|He understood the *nuances* of the poem.",
+"juxtapose|v.|나란히 놓다|to place side by side for contrast|The artist *juxtaposed* old and new.",
+"volatile|adj.|변덕스러운, 불안정한|likely to change suddenly|The stock market is *volatile*.",
+"deficit|n.|적자, 부족액|a shortage, especially of money|The country has a large budget *deficit*.",
+"malevolent|adj.|악의적인|wishing harm|The *malevolent* witch cursed the village.",
+"impede|v.|방해하다|to slow or block|Traffic *impeded* our progress.",
+"cognitive|adj.|인지의|related to thinking|Puzzles improve *cognitive* skills.",
+"cohesive|adj.|결속력 있는|forming a united whole|The team is very *cohesive*.",
+"compile|v.|모으다, 편집하다|to collect into one|She *compiled* a list of sources.",
+"augment|v.|늘리다, 증가시키다|to make larger|He took a job to *augment* his income.",
+"partisan|adj.|당파적인|strongly supporting one side|The debate became very *partisan*.",
+"hypothetical|adj.|가정의|imagined; not real|Let's look at a *hypothetical* situation.",
+"escalate|v.|확대되다|to increase quickly|The argument *escalated* into a fight.",
+"deference|n.|존중, 경의|polite respect|He bowed in *deference* to his grandfather.",
+"concede|v.|인정하다, 양보하다|to admit something is true|He *conceded* that she was right.",
+"arduous|adj.|고된|very difficult and tiring|The climb was long and *arduous*.",
+"allegiance|n.|충성|loyalty|They pledged *allegiance* to the flag.",
+"lament|v.|한탄하다|to express sorrow|She *lamented* the loss of her dog.",
+"emulate|v.|모방하다, 본받다|to copy someone you admire|Kids *emulate* their heroes.",
+"mitigate|v.|완화하다, 경감하다|to make less harmful|Planting trees can *mitigate* flooding.",
+"compel|v.|강요하다|to force|The rain *compelled* us to stay inside.",
+"instigate|v.|부추기다|to start or cause|Who *instigated* the fight?",
+"quantify|v.|수량화하다|to measure|It's hard to *quantify* happiness.",
+"wane|v.|줄어들다, 약해지다|to decrease gradually|Interest in the game *waned*.",
+"diffuse|v.|퍼뜨리다; 완화하다|to spread out; to calm|She *diffused* the tension with a joke.",
+"invoke|v.|호소하다, 들먹이다|to call on; to cite|He *invoked* his right to stay silent.",
+"propensity|n.|성향|a natural tendency|He has a *propensity* to exaggerate.",
+"transient|adj.|일시적인|lasting a short time|The pain was *transient*.",
+"aesthetic|adj.|미적인|related to beauty|The room has a calm *aesthetic* feel.",
+"revere|v.|숭배하다, 존경하다|to deeply respect|They *revere* their elders.",
+"abstract|adj.|추상적인|existing as an idea, not a physical thing|Love is an *abstract* concept.",
+"incongruous|adj.|어울리지 않는|out of place|A tuxedo looked *incongruous* at the beach.",
+"solicit|v.|요청하다|to ask for|The school *solicited* donations.",
+"prospective|adj.|장래의|expected or likely|*Prospective* students toured the campus.",
+"methodical|adj.|체계적인|careful and orderly|She is *methodical* in her work.",
+"oblivious|adj.|의식하지 못하는|unaware|He was *oblivious* to the danger.",
+"precedent|n.|선례|an earlier example|The case set a *precedent*.",
+"disposition|n.|성향, 기질|a person's usual mood|She has a cheerful *disposition*.",
+"scrutinize|v.|면밀히 조사하다|to examine very closely|The judges *scrutinized* every detail of the project.",
+"enigma|n.|수수께끼|a mystery|Her past is an *enigma*.",
+"paramount|adj.|가장 중요한|most important|Safety is *paramount*.",
+"debilitate|v.|쇠약하게 하다|to make weak|The illness *debilitated* him for weeks.",
+"onset|n.|시작, 발병|the beginning|The *onset* of winter brought snow.",
+"substantiate|v.|입증하다|to prove with evidence|Can you *substantiate* your claim?",
+"resonate|v.|공감을 불러일으키다, 울리다|to strike a chord|Her words *resonated* with the audience.",
+"placid|adj.|잔잔한, 차분한|calm|The lake was *placid* at dawn.",
+"thrive|v.|번성하다|to grow strongly|Cacti *thrive* in deserts.",
+"evoke|v.|불러일으키다|to bring to mind|The song *evokes* childhood memories.",
+"nurture|v.|양육하다, 키우다|to care for and help grow|Parents *nurture* their children.",
+"rhetoric|n.|수사학, 미사여구|persuasive speech|His *rhetoric* moved the crowd.",
+"contend|v.|주장하다; 다투다|to argue; to compete|He *contends* that the test was unfair.",
+"connotation|n.|함축된 의미|an idea suggested by a word|\"Cheap\" has a negative *connotation*.",
+"negligent|adj.|태만한|careless|The *negligent* driver caused the crash.",
+"entail|v.|수반하다|to involve as a part|The job *entails* a lot of travel.",
+"deplete|v.|고갈시키다|to use up|Overfishing has *depleted* the ocean.",
+"lucid|adj.|명료한|clear and easy to understand|She gave a *lucid* explanation.",
+"acute|adj.|급성의, 예리한|sharp; severe|She felt an *acute* pain in her side.",
+"prolong|v.|연장하다|to make longer|Don't *prolong* the meeting.",
+"dogmatic|adj.|독단적인|insisting one's beliefs are true|He's too *dogmatic* to listen.",
+"aggregate|n.|총계|a total|The *aggregate* score decides the winner.",
+"anecdote|n.|일화|a short personal story|He opened his speech with a funny *anecdote*.",
+"simultaneous|adj.|동시의|happening at the same time|There were two *simultaneous* explosions.",
+"aspire|v.|열망하다|to strongly hope to achieve|She *aspires* to be a doctor.",
+"hierarchy|n.|계층|a ranking system|The company has a strict *hierarchy*.",
+"animosity|n.|적대감|strong dislike|There was *animosity* between the rival teams.",
+"affluent|adj.|부유한|wealthy|They live in an *affluent* neighborhood.",
+"discord|n.|불화|disagreement|There was *discord* among the members.",
+"alienate|v.|소외시키다|to make someone feel unwelcome|Rude comments *alienate* new players.",
+"ambiguous|adj.|모호한|having more than one possible meaning|The instructions were *ambiguous*, so everyone did something different.",
+"deplore|v.|개탄하다|to strongly disapprove of|We *deplore* violence.",
+"meager|adj.|빈약한|lacking in amount|They lived on a *meager* income.",
+"incite|v.|선동하다|to stir up|He was accused of *inciting* the riot.",
+"brevity|n.|간결함|shortness|The speech was praised for its *brevity*.",
+"encompass|v.|포함하다, 아우르다|to include|The park *encompasses* three lakes.",
+"prevail|v.|이기다, 우세하다|to win; to be common|Good *prevailed* over evil.",
+"provocative|adj.|도발적인|causing strong reactions|The article was *provocative*.",
+"astute|adj.|기민한, 영리한|clever at understanding situations|An *astute* investor saw the opportunity.",
+"exert|v.|가하다, 발휘하다|to use force or effort|He *exerted* all his strength.",
+"ostracize|v.|따돌리다, 배척하다|to exclude from a group|He was *ostracized* for his views.",
+"retaliate|v.|보복하다|to strike back|He *retaliated* with an insult.",
+"avert|v.|피하다, 막다|to prevent; to turn away|Quick thinking *averted* a disaster.",
+"rampant|adj.|만연한|spreading out of control|Rumors were *rampant*.",
+"endorse|v.|지지하다, 보증하다|to publicly support|The athlete *endorsed* the shoes.",
+"divergent|adj.|갈라지는, 다른|going in different directions|They have *divergent* opinions.",
+"salient|adj.|두드러진|most noticeable|List the *salient* points.",
+"dissipate|v.|흩어져 사라지다|to disappear gradually|The fog *dissipated* by noon.",
+"innate|adj.|타고난|natural; inborn|She has an *innate* talent for music.",
+"modest|adj.|겸손한; 적당한|humble; not large|He lives in a *modest* house.",
+"proliferate|v.|급증하다|to increase rapidly|Coffee shops have *proliferated*.",
+"paradox|n.|역설|a statement that seems to contradict itself|\"Less is more\" is a *paradox*.",
+"secular|adj.|세속적인|not religious|It's a *secular* holiday.",
+"cynical|adj.|냉소적인|believing people act only for themselves|He's *cynical* about politicians' promises.",
+"constrain|v.|제약하다|to limit|Our plans are *constrained* by money.",
+"illuminate|v.|밝히다, 설명하다|to light up; to explain|The lamp *illuminated* the room.",
+"latent|adj.|잠재된|present but hidden|He has *latent* artistic talent.",
+"coherent|adj.|일관성 있는, 논리적인|clear and logically connected|Your essay needs a *coherent* argument from start to finish.",
+"regress|v.|퇴보하다|to go back to a worse state|His skills *regressed* without practice.",
+"conjecture|n.|추측|a guess without proof|His theory is pure *conjecture*.",
+"efficacy|n.|효능|effectiveness|Tests proved the *efficacy* of the vaccine.",
+"omit|v.|빠뜨리다|to leave out|Don't *omit* any details.",
+"implication|n.|함축, 영향|a possible effect or meaning|Think about the *implications* of your choice.",
+"autonomy|n.|자율성|independence; self-rule|Teens want more *autonomy*.",
+"recipient|n.|수령인|one who receives|She was the *recipient* of the award.",
+"dearth|n.|부족|a lack|There is a *dearth* of good options.",
+"intermittent|adj.|간헐적인|stopping and starting|We had *intermittent* rain all day.",
+"unprecedented|adj.|전례 없는|never done before|The storm caused *unprecedented* damage.",
+"exhaustive|adj.|철저한, 남김없는|complete and thorough|They did an *exhaustive* search.",
+"defer|v.|미루다; 따르다|to delay; to yield to another|Let's *defer* the meeting until Monday.",
+"erode|v.|침식시키다|to wear away|Waves *eroded* the cliff.",
+"frivolous|adj.|하찮은, 경박한|not serious|Don't waste money on *frivolous* things.",
+"discrepancy|n.|불일치, 차이|a difference between things that should match|There was a *discrepancy* between the receipt and the price tag.",
+"degrade|v.|저하시키다, 비하하다|to lower in quality or respect|Plastic takes years to *degrade*.",
+"subsidize|v.|보조금을 주다|to help pay for|The city *subsidizes* bus fares.",
+"uphold|v.|유지하다, 지지하다|to support; to maintain|Judges *uphold* the law.",
+"pessimistic|adj.|비관적인|expecting the worst|He's *pessimistic* about the weather.",
+"attribute|v.|~의 탓으로 돌리다|to say something is caused by|She *attributes* her success to hard work.",
+"appease|v.|달래다|to calm by giving in|He *appeased* his sister with candy.",
+"induce|v.|유도하다, 유발하다|to cause|The medicine may *induce* sleep.",
+"stringent|adj.|엄격한|very strict|The school has *stringent* rules.",
+"conventional|adj.|관습적인, 전통적인|following the usual way|She ignored the *conventional* approach and tried something new.",
+"intact|adj.|손상되지 않은|whole; undamaged|The vase arrived *intact*.",
+"mobilize|v.|동원하다|to organize for action|They *mobilized* volunteers.",
+"intrinsic|adj.|본질적인|belonging naturally|Learning has *intrinsic* value.",
+"notion|n.|개념, 생각|an idea or belief|The *notion* that games are only for kids is outdated.",
+"dispel|v.|떨쳐 버리다, 없애다|to make go away|The facts *dispelled* the rumor.",
+"synthesize|v.|종합하다, 합성하다|to combine into a whole|*Synthesize* the sources into one essay.",
+"ascertain|v.|확인하다, 알아내다|to find out for certain|Police tried to *ascertain* what happened.",
+"stereotype|n.|고정관념|an oversimplified idea about a group|Avoid using *stereotypes*.",
+"delineate|v.|윤곽을 그리다, 설명하다|to describe precisely|The map *delineates* the borders.",
+"condone|v.|용납하다|to accept wrong behavior|The school does not *condone* cheating.",
+"proficient|adj.|능숙한|skilled|He is *proficient* in Spanish.",
+"mandate|n.|명령, 권한|an official order|The mayor has a *mandate* to fix the roads.",
+"ratify|v.|비준하다|to officially approve|The treaty was *ratified*.",
+"predominant|adj.|우세한|most common or powerful|Blue is the *predominant* color.",
+"influx|n.|유입|a large arrival|There was an *influx* of tourists in summer.",
+"demographic|n.|인구 집단|a group of people in a population|Teens are a key *demographic* for game makers.",
+"foster|v.|촉진하다, 기르다|to encourage growth|Teachers *foster* curiosity.",
+"dismiss|v.|해산시키다; 묵살하다|to send away; to reject|He *dismissed* the idea as silly.",
+"dichotomy|n.|이분법, 대립|a division into two opposite parts|There's a *dichotomy* between work and play.",
+"elusive|adj.|찾기 어려운|hard to find or catch|The *elusive* fox escaped again.",
+"devise|v.|고안하다|to plan or invent|They *devised* a clever escape.",
+"repudiate|v.|거부하다|to reject|She *repudiated* the false claims.",
+"articulate|adj.|명료하게 표현하는|able to speak clearly|She is an *articulate* speaker.",
+"lavish|adj.|호화로운|very rich and generous|They threw a *lavish* party.",
+"wary|adj.|경계하는|cautious|Be *wary* of strangers online.",
+"comprise|v.|구성하다|to consist of|The class *comprises* 30 students.",
+"transparent|adj.|투명한|see-through; open|The government should be *transparent*.",
+"adept|adj.|능숙한|very skilled|She is *adept* at solving puzzles.",
+"immerse|v.|몰두하게 하다|to involve deeply|She *immersed* herself in the book.",
+"denounce|v.|비난하다|to publicly criticize|Leaders *denounced* the attack.",
+"succinct|adj.|간결한|brief and clear|Give a *succinct* answer.",
+"pivotal|adj.|중추적인|crucial; central|That was a *pivotal* moment in history.",
+"pragmatic|adj.|실용적인|dealing with things in a practical way|Taking the bus was the *pragmatic* choice.",
+"apathy|n.|무관심|lack of interest|Voter *apathy* led to low turnout.",
+"preclude|v.|막다, 불가능하게 하다|to prevent|Rain *precluded* a picnic.",
+"paradigm|n.|패러다임, 전형|a model or pattern|The internet created a new *paradigm*.",
+"antagonist|n.|적대자, 악역|an opponent; the villain|The *antagonist* tries to stop the hero.",
+"deem|v.|간주하다|to consider|The area was *deemed* unsafe.",
+"inhibit|v.|억제하다|to hold back|Fear can *inhibit* learning.",
+"tentative|adj.|잠정적인|not certain|We made *tentative* plans.",
+"allude|v.|넌지시 언급하다|to refer to indirectly|She *alluded* to a secret but wouldn't explain.",
+"discern|v.|분별하다, 알아차리다|to notice or recognize|It's hard to *discern* the truth.",
+"subjective|adj.|주관적인|based on personal feelings|Taste in music is *subjective*.",
+"disparity|n.|격차|a big difference|There is a *disparity* between rich and poor.",
+"explicit|adj.|명백한, 분명한|stated clearly and directly|The coach gave *explicit* instructions about the play.",
+"imminent|adj.|임박한|about to happen|A storm is *imminent*.",
+"imperative|adj.|필수적인|extremely important|It's *imperative* that you arrive on time.",
+"gullible|adj.|잘 속는|easily tricked|The *gullible* boy believed the prank.",
+"hypocrisy|n.|위선|saying one thing and doing another|It's *hypocrisy* to preach what you don't practice.",
+"metaphor|n.|은유|a comparison without \"like\" or \"as\"|\"Time is a thief\" is a *metaphor*.",
+"stagnant|adj.|정체된, 고인|not moving|Mosquitoes breed in *stagnant* water.",
+"deteriorate|v.|악화되다|to become worse over time|The old bridge *deteriorated* after years of storms.",
+"consensus|n.|합의|general agreement|The group reached a *consensus*.",
+"reconcile|v.|화해시키다, 조화시키다|to make friendly again|The friends *reconciled* after the fight.",
+"reprimand|v.|질책하다|to scold formally|The teacher *reprimanded* the student.",
+"relinquish|v.|포기하다, 양도하다|to give up|The king *relinquished* his throne.",
+"galvanize|v.|자극하다|to shock into action|The speech *galvanized* the crowd.",
+"enumerate|v.|열거하다|to list one by one|She *enumerated* the reasons.",
+"premise|n.|전제|a basic idea an argument is based on|The *premise* of the story is simple.",
+"bolster|v.|강화하다, 북돋우다|to support or strengthen|The win *bolstered* the team's confidence.",
+"digress|v.|주제에서 벗어나다|to wander from the main topic|Sorry, I *digressed* — back to the lesson.",
+"plausible|adj.|그럴듯한|seeming reasonable or likely|His excuse sounded *plausible*, but it wasn't true.",
+"vindictive|adj.|앙심을 품은|wanting revenge|The *vindictive* villain plotted his return.",
+"ponder|v.|숙고하다|to think about carefully|She *pondered* the question.",
+"refute|v.|반박하다|to prove wrong|She *refuted* his argument.",
+"confer|v.|상의하다; 수여하다|to discuss; to give|The judges *conferred* before deciding.",
+"overt|adj.|공공연한|done openly|There was *overt* hostility between them.",
+"opaque|adj.|불투명한|not see-through|The window was *opaque*.",
+"venerate|v.|공경하다|to regard with deep respect|They *venerate* their ancestors.",
+"fallacy|n.|오류|a false belief|It's a *fallacy* that we use only 10% of our brain.",
+"commemorate|v.|기념하다|to honor the memory of|A statue *commemorates* the heroes.",
+"discourse|n.|담론, 대화|serious discussion|Public *discourse* has become angry.",
+"empirical|adj.|경험적인, 실증적인|based on observation or experiment|Scientists need *empirical* evidence, not just opinions.",
+"integral|adj.|필수적인|necessary to make a whole|Practice is *integral* to success.",
+"elicit|v.|이끌어 내다|to draw out a response|The joke *elicited* laughter.",
+"implicit|adj.|암묵적인|suggested but not said directly|There was an *implicit* agreement not to spoil the ending.",
+"vigilant|adj.|경계하는|watchful|Stay *vigilant* at night.",
+"contentious|adj.|논쟁을 일으키는|causing argument|Homework rules are a *contentious* topic.",
+"dubious|adj.|의심스러운|doubtful|That claim is *dubious*.",
+"adamant|adj.|단호한|refusing to change one's mind|He was *adamant* that he had locked the door.",
+"postulate|v.|가정하다|to suggest as true|Scientists *postulated* a new planet.",
+"obstruct|v.|막다|to block|A tree *obstructed* the road.",
+"novice|n.|초보자|a beginner|She's a *novice* at chess.",
+"delegate|v.|위임하다|to give a task to someone else|A good leader *delegates* work.",
+"jeopardize|v.|위태롭게 하다|to put at risk|Cheating could *jeopardize* your future.",
+"contemporary|adj.|현대의, 동시대의|modern; of the same time|She loves *contemporary* art.",
+"detrimental|adj.|해로운|harmful|Smoking is *detrimental* to health.",
+"facet|n.|측면|one side of something|Music is one *facet* of her life.",
+"exempt|adj.|면제된|free from a rule|Seniors are *exempt* from the final.",
+"indispensable|adj.|필수 불가결한|absolutely necessary|A good map is *indispensable* on a hike.",
+"reiterate|v.|반복하다|to say again|Let me *reiterate* the rules.",
+"reciprocate|v.|보답하다|to give back in return|He *reciprocated* her kindness.",
+"amiable|adj.|상냥한|friendly and pleasant|Our *amiable* neighbor waves every morning.",
+"prestige|n.|명성|respect from success|The school has great *prestige*.",
+"shrewd|adj.|기민한, 영리한|clever in practical matters|She made a *shrewd* deal.",
+"sentiment|n.|감정, 정서|a feeling or opinion|Public *sentiment* turned against the plan.",
+"arbitrary|adj.|임의의, 제멋대로인|based on chance or whim, not reason|The rule seemed *arbitrary* because no one explained it.",
+"skeptical|adj.|회의적인|doubting that something is true|I was *skeptical* of the ad's claims.",
+"distill|v.|증류하다; 핵심을 추출하다|to purify; to extract the essence|She *distilled* the book into one page.",
+"adverse|adj.|불리한, 해로운|harmful; unfavorable|The medicine had no *adverse* effects.",
+"fluctuate|v.|변동하다|to rise and fall irregularly|Prices *fluctuate* depending on demand.",
+"pertinent|adj.|관련 있는|relevant|Ask only *pertinent* questions.",
+"magnitude|n.|규모, 중요성|size or importance|We didn't realize the *magnitude* of the problem.",
+"polarize|v.|양극화시키다|to divide into two opposite groups|The issue *polarized* the town.",
+"assimilate|v.|동화되다, 흡수하다|to take in and absorb|Immigrants often *assimilate* into a new culture.",
+"concise|adj.|간결한|short and clear|Keep your answer *concise* — two sentences at most.",
+"verbose|adj.|장황한|using too many words|His essay was too *verbose*.",
+"despondent|adj.|낙담한|very sad and hopeless|He was *despondent* after the loss.",
+"prevalent|adj.|널리 퍼진|common in a place or time|Smartphones are *prevalent* among teenagers.",
+"futile|adj.|헛된|useless|It was *futile* to argue.",
+"impartial|adj.|공정한|fair; not taking sides|A judge must be *impartial*.",
+"reminiscent|adj.|연상시키는|reminding of something|The smell is *reminiscent* of Grandma's kitchen.",
+"incessant|adj.|끊임없는|never stopping|The *incessant* barking kept me awake.",
+"optimal|adj.|최적의|best|What's the *optimal* time to study?",
+"supplant|v.|대신하다|to take the place of|Phones have *supplanted* cameras.",
+"undermine|v.|약화시키다|to weaken gradually|Constant complaints can *undermine* team spirit.",
+"comprehensive|adj.|포괄적인|including everything|The guide gives a *comprehensive* list of every item in the game.",
+"perpetuate|v.|영속시키다|to make continue|Stereotypes *perpetuate* unfairness.",
+"insatiable|adj.|채울 수 없는|impossible to satisfy|He has an *insatiable* appetite for books.",
+"subordinate|adj.|하위의|lower in rank|He is *subordinate* to the manager.",
+"fabricate|v.|조작하다, 제작하다|to make up; to build|He *fabricated* an excuse.",
+"proximity|n.|근접|nearness|The house is in close *proximity* to the school.",
+"marginal|adj.|미미한, 주변부의|small; at the edge|The change was *marginal*.",
+"manifest|v.|나타내다|to show clearly|His fear *manifested* as anger.",
+"embellish|v.|꾸미다, 윤색하다|to decorate; to add false details|He *embellished* the story.",
+"negligible|adj.|무시해도 될 정도의|too small to matter|The cost is *negligible*.",
+"contemplate|v.|숙고하다|to think about something deeply|He *contemplated* quitting the team but decided to stay.",
+"replenish|v.|다시 채우다|to fill again|*Replenish* your water bottle.",
+"proponent|n.|지지자|a supporter|She is a *proponent* of free school lunch.",
+"misconception|n.|오해|a wrong idea|It's a common *misconception* that bats are blind.",
+"altruistic|adj.|이타적인|caring about others' welfare|Her *altruistic* acts helped the whole town.",
+"analogous|adj.|유사한|similar in some way|The heart is *analogous* to a pump.",
+"sanction|n.|제재; 승인|a penalty; official approval|The country faced economic *sanctions*.",
+"rectify|v.|바로잡다|to fix|We will *rectify* the error.",
+"prolific|adj.|다작의, 많이 생산하는|producing a lot|She is a *prolific* writer.",
+"static|adj.|정적인|not changing|Prices have remained *static*.",
+"naive|adj.|순진한|lacking experience|It was *naive* to trust a stranger.",
+"nominal|adj.|명목상의; 아주 적은|in name only; very small|There is a *nominal* fee.",
+"sporadic|adj.|산발적인|happening now and then|There was *sporadic* gunfire.",
+"infamous|adj.|악명 높은|famous for something bad|The pirate was *infamous* for his cruelty.",
+"curtail|v.|줄이다, 단축하다|to cut short|Rain *curtailed* the game.",
+"rationale|n.|근거, 이유|the reason behind something|What's the *rationale* for this rule?",
+"alleviate|v.|완화하다, 덜어주다|to make pain or a problem less severe|The medicine *alleviated* his headache.",
+"substantial|adj.|상당한|large in amount or importance|She made a *substantial* improvement in her grades.",
+"elaborate|v.|자세히 설명하다|to add more detail|Could you *elaborate* on your idea?",
+"profound|adj.|심오한, 깊은|very deep or great|The book had a *profound* effect on me.",
+"disdain|n.|경멸|a feeling that something is unworthy|She looked at the mess with *disdain*.",
+"mediocre|adj.|평범한, 그저 그런|average; not very good|The food was *mediocre*.",
+"deviate|v.|벗어나다|to move away from the usual|Don't *deviate* from the plan.",
+"reinforce|v.|강화하다|to make stronger|Practice tests *reinforce* what you learned.",
+"renounce|v.|포기하다, 버리다|to formally give up|He *renounced* his claim to the land.",
+"haphazard|adj.|무계획적인|random; disorganized|The books were stacked in a *haphazard* way.",
+"catalyst|n.|촉매, 계기|something that causes change|The invention was a *catalyst* for growth.",
+"exemplify|v.|예시하다, 전형이 되다|to be a typical example of|She *exemplifies* good leadership.",
+"rudimentary|adj.|기초적인|basic|I have a *rudimentary* knowledge of French.",
+"erratic|adj.|불규칙한|unpredictable|His driving was *erratic*.",
+"redundant|adj.|불필요한, 중복되는|not needed; repeated|Delete the *redundant* sentences.",
+"inherent|adj.|내재된, 본래의|existing as a natural part of something|Risk is *inherent* in any extreme sport.",
+"advocate|v.|옹호하다, 지지하다|to publicly support an idea|She *advocates* for cleaner parks in our city.",
+"banal|adj.|진부한|boring and unoriginal|The movie's plot was *banal*.",
+"susceptible|adj.|~에 취약한|easily affected|Kids are *susceptible* to colds.",
+"fervent|adj.|열렬한|very passionate|She is a *fervent* supporter of the team."
+]},
+ {id:"s", name:"SAT", sub:"SAT Advanced", icon:"👑", data:[
+"invective|n.|독설|harsh insulting language|He hurled *invective* at the referee.",
+"capitulate|v.|항복하다|to give in|The army *capitulated* after a long siege.",
+"jubilant|adj.|환희에 찬|joyful|The *jubilant* fans celebrated.",
+"duplicity|n.|표리부동, 사기|deceitfulness|His *duplicity* was finally exposed.",
+"voracious|adj.|탐욕스러운, 왕성한|very eager; hungry|She is a *voracious* reader.",
+"languish|v.|시들다, 괴로워하다|to weaken; to suffer|The project *languished* for years.",
+"disingenuous|adj.|솔직하지 못한|insincere|His apology seemed *disingenuous*.",
+"endemic|adj.|고유한, 풍토적인|native to a place|Kangaroos are *endemic* to Australia.",
+"omnipotent|adj.|전능한|all-powerful|The villain wanted to be *omnipotent*.",
+"languid|adj.|나른한|slow and relaxed|We spent a *languid* afternoon by the pool.",
+"admonish|v.|훈계하다|to warn or scold gently|The coach *admonished* us for being late.",
+"tactile|adj.|촉각의|related to touch|The toy has *tactile* textures.",
+"decorum|n.|예의 바름|proper behavior|Maintain *decorum* in the courtroom.",
+"exigent|adj.|긴급한|urgent|The situation was *exigent*.",
+"nemesis|n.|숙적|a long-time enemy|Batman's *nemesis* is the Joker.",
+"virulent|adj.|악성의, 맹렬한|extremely harmful or hostile|A *virulent* strain of flu spread.",
+"agile|adj.|민첩한|able to move quickly|The *agile* cat leaped onto the fence.",
+"misanthrope|n.|사람을 싫어하는 사람|one who dislikes people|The *misanthrope* lived alone in the woods.",
+"fetter|v.|속박하다|to restrain|Fear *fettered* her creativity.",
+"heterogeneous|adj.|이질적인|made of different parts|The class is *heterogeneous* in skills.",
+"forage|v.|찾아다니다|to search for food|Bears *forage* for berries.",
+"ludicrous|adj.|터무니없는|ridiculous|That idea is *ludicrous*.",
+"canny|adj.|약삭빠른|shrewd|She is a *canny* businesswoman.",
+"precept|n.|교훈, 원칙|a rule for behavior|\"Treat others kindly\" is a good *precept*.",
+"quaint|adj.|예스럽고 아름다운|charmingly old-fashioned|We stayed in a *quaint* village.",
+"mar|v.|망치다|to spoil|Rain *marred* the picnic.",
+"proscribe|v.|금지하다|to forbid|The law *proscribes* smoking indoors.",
+"behemoth|n.|거대한 것|something huge|The company is a tech *behemoth*.",
+"modicum|n.|소량|a small amount|Show a *modicum* of respect.",
+"fulsome|adj.|지나친|excessive in praise|Her *fulsome* compliments felt fake.",
+"querulous|adj.|투덜대는|complaining|The *querulous* passenger complained all flight.",
+"distraught|adj.|정신이 나간, 몹시 괴로운|deeply upset|She was *distraught* when her cat went missing.",
+"feign|v.|가장하다|to pretend|He *feigned* illness to skip school.",
+"docile|adj.|유순한|easy to control|The *docile* horse let the kids ride.",
+"portent|n.|징조|a sign of something to come|Dark clouds were a *portent* of rain.",
+"spendthrift|n.|낭비가|one who wastes money|The *spendthrift* was broke by Friday.",
+"torpid|adj.|무기력한|sluggish|The heat made us *torpid*.",
+"onerous|adj.|부담스러운|burdensome|The job had *onerous* duties.",
+"serendipity|n.|뜻밖의 행운|lucky discovery by chance|Finding the book was pure *serendipity*.",
+"extenuating|adj.|정상을 참작할 만한|making less serious|There were *extenuating* circumstances.",
+"ingrate|n.|배은망덕한 사람|an ungrateful person|Only an *ingrate* would forget such kindness.",
+"uncanny|adj.|이상한, 기묘한|strange and mysterious|She has an *uncanny* ability to guess.",
+"equivocal|adj.|애매한, 얼버무리는|unclear, often on purpose|He gave an *equivocal* answer to avoid taking sides.",
+"pusillanimous|adj.|겁 많은|cowardly|The *pusillanimous* leader ran away.",
+"extricate|v.|구출하다, 빼내다|to free from difficulty|He *extricated* himself from the mud.",
+"fervor|n.|열정|intense passion|They sang with great *fervor*.",
+"compliant|adj.|순응하는|willing to obey|The building is *compliant* with safety rules.",
+"permeate|v.|스며들다|to spread throughout|The smell *permeated* the house.",
+"impugn|v.|의문을 제기하다|to challenge as false|He *impugned* her honesty.",
+"morose|adj.|시무룩한|gloomy|He was *morose* after the loss.",
+"vilify|v.|비방하다|to speak ill of|The press *vilified* the coach.",
+"pungent|adj.|톡 쏘는|having a strong smell or taste|Kimchi has a *pungent* smell.",
+"fortuitous|adj.|우연한, 운 좋은|happening by lucky chance|Our meeting was *fortuitous*.",
+"calumny|n.|중상모략|a false statement to harm someone|He was the victim of *calumny*.",
+"bravado|n.|허세|a show of boldness|His *bravado* hid his fear.",
+"expiate|v.|속죄하다|to make amends|He tried to *expiate* his guilt.",
+"cloying|adj.|물리도록 단|too sweet|The candy was *cloying*.",
+"apprise|v.|알리다|to inform|Please *apprise* me of any changes.",
+"iniquity|n.|부당함, 죄악|great injustice|The *iniquity* of the law angered many.",
+"harrowing|adj.|끔찍한|extremely distressing|They survived a *harrowing* storm.",
+"reprove|v.|꾸짖다|to scold gently|The teacher *reproved* the noisy class.",
+"patronize|v.|깔보다; 단골이 되다|to treat as inferior; to be a customer|Don't *patronize* me.",
+"vitriolic|adj.|독설의|bitterly harsh|She wrote a *vitriolic* letter.",
+"thwart|v.|좌절시키다|to prevent|Police *thwarted* the robbery.",
+"abject|adj.|비참한, 극도의|extremely bad|They lived in *abject* poverty.",
+"apathetic|adj.|무관심한|showing no interest|Many voters were *apathetic*.",
+"truculent|adj.|공격적인|eager to fight|The *truculent* player argued with the referee.",
+"antiquated|adj.|구식의|outdated|The school uses *antiquated* computers.",
+"renege|v.|약속을 어기다|to go back on a promise|He *reneged* on the deal.",
+"consummate|adj.|완벽한, 노련한|highly skilled|She is a *consummate* professional.",
+"sustenance|n.|음식, 생계|food; nourishment|The soup provided *sustenance*.",
+"relish|v.|즐기다|to enjoy greatly|She *relished* the challenge.",
+"destitute|adj.|극빈한|extremely poor|The war left many *destitute*.",
+"upbraid|v.|질책하다|to scold|She *upbraided* him for lying.",
+"stolid|adj.|무감각한|showing little emotion|The *stolid* guard didn't react.",
+"pecuniary|adj.|금전상의|relating to money|He had *pecuniary* problems.",
+"repose|n.|휴식|rest|The cat lay in *repose*.",
+"desecrate|v.|모독하다|to damage something sacred|Vandals *desecrated* the temple.",
+"venerable|adj.|존경할 만한|respected because of age|The *venerable* professor retired.",
+"irreverent|adj.|불경한|showing lack of respect|His *irreverent* jokes shocked the audience.",
+"vivacious|adj.|쾌활한|lively|The *vivacious* host kept the party going.",
+"indigent|adj.|가난한|very poor|The clinic serves *indigent* patients.",
+"rapacious|adj.|탐욕스러운|very greedy|The *rapacious* landlord raised rents.",
+"emaciated|adj.|수척한|extremely thin|The stray dog was *emaciated*.",
+"fawn|v.|아첨하다|to flatter too much|Fans *fawned* over the celebrity.",
+"disconcerting|adj.|당황스러운|unsettling|His stare was *disconcerting*.",
+"pedantic|adj.|현학적인, 지나치게 따지는|overly focused on small rules|His *pedantic* corrections annoyed everyone.",
+"figurative|adj.|비유적인|not literal|\"Heart of gold\" is a *figurative* expression.",
+"inundate|v.|쇄도하다, 범람시키다|to overwhelm|We were *inundated* with emails.",
+"chicanery|n.|속임수|trickery|The election was full of *chicanery*.",
+"pensive|adj.|생각에 잠긴|deeply thoughtful|She looked *pensive* by the window.",
+"livid|adj.|격노한|furious|Dad was *livid* about the broken window.",
+"vex|v.|짜증 나게 하다|to annoy|The noise *vexed* the neighbors.",
+"foment|v.|조장하다|to stir up trouble|They tried to *foment* rebellion.",
+"preeminent|adj.|뛰어난|best; most important|He is the *preeminent* expert.",
+"buttress|v.|지지하다, 강화하다|to support|Data *buttressed* her argument.",
+"antithesis|n.|정반대|the direct opposite|Hate is the *antithesis* of love.",
+"defile|v.|더럽히다|to make dirty or impure|Trash *defiled* the beach.",
+"devoid|adj.|~이 없는|completely lacking|The room was *devoid* of furniture.",
+"peccadillo|n.|작은 잘못|a minor fault|His *peccadilloes* were forgiven.",
+"ingenious|adj.|독창적인|clever and inventive|That's an *ingenious* solution.",
+"boon|n.|혜택|a helpful benefit|The new road is a *boon* to local shops.",
+"lofty|adj.|높은, 고상한|very high; noble|She has *lofty* goals.",
+"scourge|n.|재앙|a cause of great suffering|Malaria is a *scourge* in many countries.",
+"surfeit|n.|과다|an excessive amount|There was a *surfeit* of food.",
+"earnest|adj.|진지한|serious and sincere|He made an *earnest* effort.",
+"loquacious|adj.|말 많은|very talkative|The *loquacious* guest wouldn't stop talking.",
+"annihilate|v.|전멸시키다|to destroy completely|The army was *annihilated*.",
+"nomadic|adj.|유목의|moving from place to place|*Nomadic* tribes followed the herds.",
+"odious|adj.|혐오스러운|hateful|Cleaning the toilet is an *odious* task.",
+"rancor|n.|원한|bitter resentment|She spoke without *rancor*.",
+"exacerbate|v.|악화시키다|to make a problem worse|Scratching will only *exacerbate* the rash.",
+"acrid|adj.|매캐한, 신랄한|sharp and bitter in smell or taste|*Acrid* smoke filled the room.",
+"personable|adj.|호감 가는|pleasant|She's a *personable* host.",
+"aegis|n.|보호, 후원|protection or support|The project runs under the *aegis* of the city.",
+"bestow|v.|수여하다|to give as an honor|The queen *bestowed* a medal on him.",
+"renovate|v.|개조하다|to restore and improve|They *renovated* the kitchen.",
+"labyrinth|n.|미로|a maze|The old city is a *labyrinth* of streets.",
+"sordid|adj.|더러운, 비열한|dirty; immoral|The scandal was *sordid*.",
+"candor|n.|솔직함|honesty|I appreciate your *candor*.",
+"yoke|n.|멍에, 속박|a burden; a harness|They threw off the *yoke* of oppression.",
+"ignoble|adj.|비열한|dishonorable|It was an *ignoble* act.",
+"unscrupulous|adj.|부도덕한|without morals|The *unscrupulous* dealer cheated buyers.",
+"skirmish|n.|작은 충돌|a minor fight|There was a *skirmish* at the border.",
+"pugnacious|adj.|싸우기 좋아하는|eager to fight|The *pugnacious* boy started fights.",
+"pious|adj.|경건한|deeply religious|The *pious* woman prayed daily.",
+"cohort|n.|집단, 동료|a group of people|This year's *cohort* of students is large.",
+"apocryphal|adj.|출처가 의심스러운|probably not true|The story is likely *apocryphal*.",
+"grievance|n.|불만|a complaint|Workers listed their *grievances*.",
+"pejorative|adj.|경멸적인|expressing disapproval|\"Nerd\" can be *pejorative*.",
+"commensurate|adj.|상응하는|matching in size or degree|Pay should be *commensurate* with experience.",
+"nexus|n.|연결, 중심|a connection or center|The city is a *nexus* of trade.",
+"animate|v.|생기를 불어넣다|to bring to life|Her smile *animated* her whole face.",
+"tumult|n.|소동|confusion and noise|The *tumult* in the hall woke us.",
+"expound|v.|자세히 설명하다|to explain at length|He *expounded* on his theory.",
+"redress|v.|바로잡다|to set right|The law aims to *redress* injustice.",
+"amiss|adj.|잘못된|wrong; not right|Something seemed *amiss* in the room.",
+"congenial|adj.|마음이 맞는, 쾌적한|pleasant; friendly|We had a *congenial* dinner.",
+"perennial|adj.|지속되는, 다년생의|lasting; recurring|Traffic is a *perennial* problem.",
+"exculpate|v.|무죄를 입증하다|to clear from blame|The video *exculpated* the suspect.",
+"enervate|v.|기력을 빼앗다|to weaken|The heat *enervated* the runners.",
+"exorbitant|adj.|터무니없이 비싼|far too high in price|The hotel charged *exorbitant* rates.",
+"gossamer|adj.|아주 얇은|light and delicate|The fairy had *gossamer* wings.",
+"exasperate|v.|몹시 화나게 하다|to irritate intensely|His excuses *exasperated* the teacher.",
+"menial|adj.|하찮은|lowly; unskilled|He did *menial* jobs to pay rent.",
+"knell|n.|조종, 종말의 징조|a sign of the end|The defeat sounded the *knell* of the empire.",
+"zenith|n.|정점|the highest point|At the *zenith* of his career, he won three titles.",
+"interminable|adj.|끝없는|seemingly endless|The meeting was *interminable*.",
+"ennui|n.|권태|boredom|Summer brought a feeling of *ennui*.",
+"lambaste|v.|혹평하다|to criticize harshly|Critics *lambasted* the show.",
+"obdurate|adj.|완고한|stubborn|He remained *obdurate* despite our pleas.",
+"lugubrious|adj.|침울한|sad and gloomy|He played a *lugubrious* tune.",
+"charlatan|n.|사기꾼|a fake expert|The \"doctor\" was a *charlatan*.",
+"debacle|n.|대실패|a total failure|The launch was a *debacle*.",
+"spurn|v.|퇴짜 놓다|to reject with scorn|She *spurned* his offer.",
+"idyllic|adj.|목가적인, 평화로운|peaceful and perfect|They spent an *idyllic* summer by the lake.",
+"imbue|v.|불어넣다|to fill with a quality|Her speech was *imbued* with hope.",
+"acquiesce|v.|묵인하다, 따르다|to accept without protest|He *acquiesced* to their demands.",
+"fortitude|n.|불굴의 용기|courage in pain or difficulty|She faced the illness with *fortitude*.",
+"adorn|v.|장식하다|to decorate|Flowers *adorned* the table.",
+"maladroit|adj.|서투른|clumsy|His *maladroit* handling made it worse.",
+"toxic|adj.|유독한|poisonous|The fumes were *toxic*.",
+"rebuke|v.|꾸짖다|to criticize sharply|The boss *rebuked* him.",
+"mettle|n.|기개|courage and strength|The race tested her *mettle*.",
+"approbation|n.|승인, 칭찬|approval|The plan won the board's *approbation*.",
+"specious|adj.|그럴듯하지만 틀린|seemingly true but false|His argument was *specious*.",
+"mentor|n.|멘토, 스승|a trusted guide|She was my *mentor* in college.",
+"genial|adj.|다정한|friendly and cheerful|Our *genial* host made us feel at home.",
+"nebulous|adj.|모호한|vague; unclear|His plans are still *nebulous*.",
+"encroach|v.|침해하다|to intrude gradually|The city *encroached* on the farmland.",
+"innuendo|n.|빈정거림, 암시|an indirect hint, often insulting|The article was full of *innuendo*.",
+"profuse|adj.|풍부한|plentiful|He offered *profuse* apologies.",
+"forbearance|n.|인내, 관용|patient self-control|She showed *forbearance* with the noisy kids.",
+"finesse|n.|기교, 솜씨|skill and delicacy|She handled the problem with *finesse*.",
+"ulterior|adj.|숨은|hidden|He had an *ulterior* motive.",
+"inscrutable|adj.|불가해한|impossible to understand|His expression was *inscrutable*.",
+"puerile|adj.|유치한|childish|His *puerile* jokes annoyed us.",
+"culminate|v.|절정에 이르다|to reach a high point|The season *culminated* in a championship.",
+"celerity|n.|신속함|swiftness|He completed the task with *celerity*.",
+"boorish|adj.|무례한|rude and rough|His *boorish* behavior embarrassed us.",
+"stoic|adj.|금욕적인, 냉정한|enduring pain without complaint|She remained *stoic* during the crisis.",
+"vociferous|adj.|큰 소리로 외치는|loud and forceful|*Vociferous* fans cheered.",
+"anguish|n.|고뇌|severe pain or suffering|She cried out in *anguish*.",
+"beset|v.|괴롭히다|to trouble constantly|The project was *beset* by problems.",
+"flippant|adj.|경솔한|not showing proper seriousness|His *flippant* answer upset his mom.",
+"clamor|n.|아우성|a loud noise or demand|There was a *clamor* for lower prices.",
+"contiguous|adj.|인접한|touching; next to|The 48 *contiguous* states share borders.",
+"esoteric|adj.|난해한, 소수만 아는|understood by few|The book is full of *esoteric* terms.",
+"implore|v.|간청하다|to beg|She *implored* him to stay.",
+"coalesce|v.|합치다|to come together|The groups *coalesced* into one movement.",
+"sagacious|adj.|현명한|wise|The *sagacious* elder gave advice.",
+"proclivity|n.|성향|a natural tendency|He has a *proclivity* for laziness.",
+"onus|n.|책임, 부담|a burden or duty|The *onus* is on you to prove it.",
+"motley|adj.|잡다한|varied and mixed|A *motley* crew of volunteers showed up.",
+"nullify|v.|무효화하다|to cancel|The court *nullified* the contract.",
+"mollify|v.|달래다|to calm anger|He *mollified* her with an apology.",
+"forestall|v.|미연에 방지하다|to prevent by acting first|They *forestalled* the attack.",
+"ersatz|adj.|가짜의, 대용의|fake; imitation|The coffee tasted *ersatz*.",
+"loath|adj.|꺼리는|unwilling|She was *loath* to admit her mistake.",
+"requisite|adj.|필수의|required|He has the *requisite* skills.",
+"jaded|adj.|싫증 난|tired from too much of something|He was *jaded* after years of the same job.",
+"askew|adj.|비뚤어진|not straight|His tie was *askew*.",
+"hone|v.|연마하다|to sharpen; to improve|She *honed* her writing skills.",
+"mandatory|adj.|의무적인|required|Attendance is *mandatory*.",
+"harbinger|n.|전조|a sign of what is coming|Robins are a *harbinger* of spring.",
+"accede|v.|동의하다|to agree to a request|The principal *acceded* to our request.",
+"pertinacious|adj.|끈질긴|stubbornly persistent|The *pertinacious* reporter kept asking.",
+"effervescent|adj.|활기찬, 거품이 이는|bubbly; lively|Her *effervescent* personality lit up the room.",
+"awry|adv.|잘못되어|wrong; off course|Our plans went *awry*.",
+"camaraderie|n.|동지애|friendship among a group|There's great *camaraderie* on our team.",
+"ravenous|adj.|몹시 굶주린|extremely hungry|After practice I was *ravenous*.",
+"lackluster|adj.|활기 없는|dull|It was a *lackluster* performance.",
+"impetuous|adj.|성급한, 충동적인|acting quickly without thinking|His *impetuous* decision to quit surprised everyone.",
+"peruse|v.|정독하다, 훑어보다|to read carefully|She *perused* the menu.",
+"incognito|adv.|신분을 숨기고|in disguise|The star traveled *incognito*.",
+"travesty|n.|엉터리, 모독|a ridiculous imitation|The trial was a *travesty* of justice.",
+"vicarious|adj.|대리의|felt through another|She enjoyed a *vicarious* thrill watching the race.",
+"grievous|adj.|심각한|very serious|It was a *grievous* mistake.",
+"stupefy|v.|멍하게 만들다|to stun|The news *stupefied* him.",
+"confluence|n.|합류|a coming together|The city sits at the *confluence* of two rivers.",
+"ostensible|adj.|표면상의|apparent but maybe not true|The *ostensible* reason was illness.",
+"epitome|n.|전형|a perfect example|She is the *epitome* of kindness.",
+"reprisal|n.|보복|an act of revenge|They feared *reprisals*.",
+"facile|adj.|손쉬운, 피상적인|too simple|That's a *facile* answer to a hard question.",
+"protracted|adj.|오래 끄는|lasting too long|It was a *protracted* argument.",
+"rabid|adj.|광적인|extremely enthusiastic; affected with rabies|He's a *rabid* baseball fan.",
+"garrulous|adj.|수다스러운|very talkative|The *garrulous* driver talked the whole trip.",
+"adulterate|v.|불순물을 섞다|to make impure|The milk was *adulterated* with water.",
+"apprehensive|adj.|걱정하는|anxious about the future|I'm *apprehensive* about the interview.",
+"regale|v.|즐겁게 하다|to entertain|He *regaled* us with stories.",
+"hubris|n.|오만|excessive pride|His *hubris* led to his downfall.",
+"pretentious|adj.|허세 부리는|trying to seem important|The *pretentious* menu used French words.",
+"atone|v.|속죄하다|to make up for a wrong|He tried to *atone* for his mistake.",
+"profane|adj.|불경한|disrespectful of holy things|He used *profane* language.",
+"fastidious|adj.|꼼꼼한, 까다로운|very careful about details|He is *fastidious* about keeping his desk clean.",
+"avid|adj.|열심인|very eager|She is an *avid* reader.",
+"arbiter|n.|중재자, 결정권자|a judge of a dispute|The referee is the final *arbiter*.",
+"gratuitous|adj.|불필요한|uncalled for|The movie had *gratuitous* violence.",
+"duress|n.|강압|pressure or threats|He signed under *duress*.",
+"steadfast|adj.|변함없는|firm and loyal|He was a *steadfast* friend.",
+"dissonance|n.|불일치, 불협화음|lack of harmony|There was *dissonance* between his words and actions.",
+"florid|adj.|화려한, 혈색 좋은|very ornate; red-faced|His writing is too *florid*.",
+"utilitarian|adj.|실용적인|designed to be useful|The furniture was *utilitarian*.",
+"cacophony|n.|불협화음|harsh mix of sounds|The *cacophony* of car horns was awful.",
+"complacent|adj.|현실에 안주하는|too satisfied to keep trying|After winning, the team grew *complacent* and stopped practicing.",
+"assuage|v.|달래다, 누그러뜨리다|to ease or relieve|Nothing could *assuage* his guilt.",
+"nadir|n.|최저점|the lowest point|That loss was the *nadir* of his career.",
+"phlegmatic|adj.|침착한, 무감각한|calm and unemotional|The *phlegmatic* pilot stayed calm.",
+"connoisseur|n.|감정가, 전문가|an expert judge of taste|He is a *connoisseur* of fine coffee.",
+"inclement|adj.|궂은|stormy (of weather)|The game was canceled due to *inclement* weather.",
+"tawdry|adj.|싸구려의|cheap and showy|The shop sold *tawdry* jewelry.",
+"indomitable|adj.|불굴의|impossible to defeat|She has an *indomitable* spirit.",
+"lenient|adj.|관대한|not strict|The judge was *lenient*.",
+"obstinate|adj.|고집 센|refusing to change your mind|The *obstinate* mule refused to move.",
+"juncture|n.|시점, 중대한 때|a critical point in time|At this *juncture*, we must decide.",
+"compunction|n.|양심의 가책|a feeling of guilt|She lied without *compunction*.",
+"ethereal|adj.|천상의, 가벼운|delicate and light|The music had an *ethereal* quality.",
+"bluster|v.|고함치다, 허세 부리다|to talk loudly without effect|He *blustered* but did nothing.",
+"benevolent|adj.|자비로운, 선의의|kind and generous|The *benevolent* king lowered taxes during the famine.",
+"misnomer|n.|부적절한 명칭|a wrong name|\"Peanut\" is a *misnomer*; it's not a nut.",
+"largesse|n.|후한 인심|generosity|The museum depends on donors' *largesse*.",
+"exacting|adj.|까다로운|demanding|She has *exacting* standards.",
+"precipitate|v.|촉발하다|to cause suddenly|The scandal *precipitated* his resignation.",
+"cantankerous|adj.|심술궂은|bad-tempered|The *cantankerous* old man yelled at the kids.",
+"remiss|adj.|태만한|careless about duty|I'd be *remiss* not to thank you.",
+"indefatigable|adj.|지칠 줄 모르는|never tiring|The *indefatigable* volunteer worked all day.",
+"abhor|v.|혐오하다|to hate deeply|She *abhors* cruelty to animals.",
+"circumvent|v.|우회하다, 피하다|to find a way around|They *circumvented* the rules.",
+"insolent|adj.|건방진|rude|The *insolent* student mocked the teacher.",
+"ruminate|v.|곰곰이 생각하다|to think deeply|She *ruminated* on the problem.",
+"substantive|adj.|실질적인|having real importance|We had a *substantive* discussion.",
+"vestige|n.|흔적|a trace|Only a *vestige* of the castle remains.",
+"laud|v.|칭찬하다|to praise|The mayor *lauded* the firefighters.",
+"gibe|n.|조롱|a mocking remark|He ignored their *gibes*.",
+"ornate|adj.|화려하게 장식된|highly decorated|The church has an *ornate* ceiling.",
+"meticulous|adj.|세심한, 꼼꼼한|showing great attention to detail|She kept *meticulous* records of every experiment.",
+"homogeneous|adj.|동질의|all the same kind|The mixture is *homogeneous*.",
+"diaphanous|adj.|비치는|light and see-through|She wore a *diaphanous* scarf.",
+"neophyte|n.|초보자|a beginner|He's a *neophyte* at coding.",
+"audacious|adj.|대담한|bold and daring|It was an *audacious* plan.",
+"caveat|n.|경고, 단서|a warning or condition|One *caveat*: the offer ends today.",
+"arcane|adj.|비밀스러운, 난해한|known by only a few|The rules of the game are *arcane*.",
+"mercurial|adj.|변덕스러운|changing mood quickly|His *mercurial* temper scared us.",
+"unequivocal|adj.|명백한|clear; leaving no doubt|His answer was an *unequivocal* no.",
+"euphoria|n.|행복감|intense happiness|Winning brought a wave of *euphoria*.",
+"gauche|adj.|서투른, 눈치 없는|socially awkward|His *gauche* comment embarrassed us.",
+"ardent|adj.|열렬한|passionate|He is an *ardent* fan of baseball.",
+"tremulous|adj.|떨리는|shaking|She spoke in a *tremulous* voice.",
+"progeny|n.|자손|offspring|The king's *progeny* ruled for centuries.",
+"spartan|adj.|검소한|simple and strict|The room was *spartan*.",
+"ancillary|adj.|보조적인|supporting; extra|The hospital has *ancillary* staff.",
+"ignominious|adj.|수치스러운|shameful|The team suffered an *ignominious* defeat.",
+"nascent|adj.|초기의|just beginning|The *nascent* company had only five workers.",
+"extol|v.|극찬하다|to praise highly|Critics *extolled* the new album.",
+"sedentary|adj.|앉아서 하는|inactive|A *sedentary* lifestyle is unhealthy.",
+"fulminate|v.|맹렬히 비난하다|to protest loudly|He *fulminated* against the new tax.",
+"copious|adj.|풍부한|plentiful|She took *copious* notes.",
+"lucrative|adj.|돈벌이가 되는|profitable|She has a *lucrative* career.",
+"belie|v.|거짓임을 드러내다, 감추다|to give a false idea of|His smile *belied* his sadness.",
+"turbulent|adj.|격동의|full of disorder|It was a *turbulent* flight.",
+"ubiquitous|adj.|어디에나 있는|found everywhere|Coffee shops are *ubiquitous* in big cities.",
+"amalgam|n.|혼합물|a mixture|The city is an *amalgam* of cultures.",
+"dolorous|adj.|슬픈|sorrowful|She sang a *dolorous* song.",
+"enunciate|v.|또렷하게 발음하다|to pronounce clearly|*Enunciate* each word.",
+"dissolute|adj.|방탕한|lacking morals|He lived a *dissolute* life.",
+"unruly|adj.|제멋대로인|disorderly|The *unruly* crowd pushed forward.",
+"supercilious|adj.|거만한|acting superior|She gave a *supercilious* smile.",
+"censure|n.|비난, 견책|strong official disapproval|The senator faced *censure*.",
+"fanatic|n.|광신자, 열광자|an extreme enthusiast|He is a soccer *fanatic*.",
+"evanescent|adj.|덧없이 사라지는|quickly fading|The rainbow was *evanescent*.",
+"austere|adj.|검소한, 엄격한|plain; strict|The room was *austere*, with only a bed.",
+"meander|v.|구불구불 흐르다, 거닐다|to wander slowly|The river *meanders* through the valley.",
+"gall|n.|뻔뻔함|bold rudeness|He had the *gall* to ask for more.",
+"inimical|adj.|해로운, 적대적인|harmful; hostile|Smoking is *inimical* to health.",
+"salvage|v.|구조하다, 건지다|to save from loss|They *salvaged* what they could from the fire.",
+"ponderous|adj.|육중한, 지루한|heavy; dull|The book was *ponderous*.",
+"ephemeral|adj.|덧없는, 순간적인|lasting a very short time|Fame on social media is often *ephemeral*.",
+"bemused|adj.|어리둥절한|puzzled|He looked *bemused* by the question.",
+"utopia|n.|이상향|an ideal place|The novel describes a *utopia*.",
+"augur|v.|징조가 되다|to predict; to be a sign of|Early sales *augur* well for the company.",
+"irrevocable|adj.|돌이킬 수 없는|unable to be undone|The decision is *irrevocable*.",
+"impudent|adj.|무례한|rude and disrespectful|The *impudent* child talked back.",
+"burgeon|v.|급성장하다|to grow rapidly|The town *burgeoned* into a city.",
+"conviction|n.|확신; 유죄 판결|a firm belief; a guilty verdict|She spoke with *conviction*.",
+"debase|v.|품위를 떨어뜨리다|to lower in value or quality|Lies *debase* trust.",
+"balk|v.|주저하다, 거부하다|to refuse to go on|The horse *balked* at the fence.",
+"cajole|v.|구슬리다|to persuade with flattery|She *cajoled* him into dancing.",
+"noxious|adj.|유독한|harmful|The factory released *noxious* fumes.",
+"penurious|adj.|극도로 가난한, 인색한|extremely poor; stingy|They lived in *penurious* conditions.",
+"occlude|v.|막다|to block|A clot *occluded* the artery.",
+"tangential|adj.|주제에서 벗어난|only slightly related|That's a *tangential* point.",
+"preamble|n.|서문|an introduction|Read the *preamble* to the Constitution.",
+"taciturn|adj.|과묵한|reserved in speech|The *taciturn* farmer rarely spoke.",
+"envoy|n.|사절|a messenger or representative|The king sent an *envoy*.",
+"pretext|n.|구실|a false reason|He left on the *pretext* of feeling sick.",
+"affable|adj.|상냥한|friendly and easy to talk to|Our *affable* host greeted everyone.",
+"preponderance|n.|우세|a greater amount|A *preponderance* of evidence pointed to him.",
+"asylum|n.|망명, 피난처|protection given to refugees|He sought *asylum* in another country.",
+"zealous|adj.|열성적인|full of strong enthusiasm|The *zealous* fans cheered for hours.",
+"cadence|n.|억양, 리듬|rhythm of sound|The poem has a gentle *cadence*.",
+"amorphous|adj.|형체가 없는|without a clear shape|The plan was still *amorphous*.",
+"impassive|adj.|무표정한|showing no emotion|His face remained *impassive*.",
+"fruition|n.|결실|the achievement of a plan|The project came to *fruition*.",
+"wrath|n.|분노|extreme anger|He feared his father's *wrath*.",
+"amicable|adj.|우호적인|friendly and peaceful|They reached an *amicable* agreement.",
+"sanguine|adj.|낙관적인|optimistic|She is *sanguine* about her chances.",
+"malice|n.|악의|the desire to harm|He spoke without *malice*.",
+"supplicate|v.|간청하다|to beg humbly|He *supplicated* the king for mercy.",
+"credo|n.|신조|a set of beliefs|\"Never give up\" is her *credo*.",
+"provident|adj.|앞날을 대비하는|planning for the future|*Provident* families save money.",
+"anathema|n.|혐오의 대상|something hated|Lying is *anathema* to her.",
+"impair|v.|손상시키다|to weaken or damage|Lack of sleep *impairs* judgment.",
+"propriety|n.|예절, 적절함|proper behavior|She acted with *propriety*.",
+"dilettante|n.|어설픈 애호가|a person with shallow interest|He's a *dilettante* who dabbles in art.",
+"inexorable|adj.|멈출 수 없는|impossible to stop|The *inexorable* march of time.",
+"elegy|n.|애가, 비가|a sad poem for the dead|He wrote an *elegy* for his father.",
+"consternation|n.|당황, 놀람|anxiety or dismay|The news caused *consternation*.",
+"discerning|adj.|안목 있는|showing good judgment|She has a *discerning* eye for art.",
+"rue|v.|후회하다|to regret|He *rued* the day he quit.",
+"temperate|adj.|온화한, 절제하는|mild; moderate|California has a *temperate* climate.",
+"tepid|adj.|미지근한|lukewarm|The bath was *tepid*.",
+"conundrum|n.|난제|a difficult problem|Choosing a college is a *conundrum*.",
+"propagate|v.|번식시키다, 퍼뜨리다|to spread|Rumors *propagate* quickly online.",
+"nondescript|adj.|특징 없는|plain; dull|He wore a *nondescript* gray coat.",
+"fickle|adj.|변덕스러운|changing often|Fans can be *fickle*.",
+"idiosyncrasy|n.|특이한 버릇|a peculiar habit|Humming while he works is his *idiosyncrasy*.",
+"penitent|adj.|뉘우치는|feeling sorry|The *penitent* boy apologized.",
+"alacrity|n.|민첩함, 기꺼이 함|cheerful eagerness|He accepted the offer with *alacrity*.",
+"mundane|adj.|평범한, 일상적인|ordinary and dull|He wanted adventure instead of *mundane* chores.",
+"imperceptible|adj.|감지할 수 없는|too slight to notice|The change was *imperceptible*.",
+"resplendent|adj.|눈부시게 빛나는|splendid|The bride looked *resplendent*.",
+"curt|adj.|퉁명스러운|rudely brief|She gave a *curt* answer.",
+"winsome|adj.|매력적인|charming|The child had a *winsome* smile.",
+"lacerate|v.|찢다, 상처를 입히다|to cut deeply|Glass *lacerated* his hand.",
+"defunct|adj.|사라진, 기능하지 않는|no longer existing|The company is now *defunct*.",
+"temerity|n.|무모함, 뻔뻔함|reckless boldness|He had the *temerity* to argue with the judge.",
+"reprieve|n.|유예|a temporary relief|The snow day gave us a *reprieve* from the test.",
+"parochial|adj.|편협한|narrow in outlook|His views are *parochial*.",
+"martinet|n.|엄격한 사람|a strict disciplinarian|The coach was a *martinet*.",
+"incredulous|adj.|믿지 않는|unwilling to believe|She was *incredulous* at the news.",
+"visceral|adj.|본능적인|deeply felt|I had a *visceral* reaction to the scene.",
+"illusory|adj.|환상에 불과한|not real|The benefits were *illusory*.",
+"malign|v.|비방하다|to speak harmfully about|He was *maligned* by the press.",
+"glib|adj.|말만 번지르르한|smooth but shallow|He gave a *glib* excuse.",
+"dupe|v.|속이다|to trick|He was *duped* into buying a fake.",
+"vehement|adj.|격렬한|forceful; intense|She was *vehement* in her protest.",
+"reverent|adj.|경건한|showing deep respect|The crowd was *reverent* at the memorial.",
+"facetious|adj.|농담조의, 경박한|not serious at the wrong time|His *facetious* comment annoyed the teacher.",
+"trivialize|v.|하찮게 만들다|to make seem unimportant|Don't *trivialize* her concerns.",
+"virtuous|adj.|덕이 있는|morally good|She lived a *virtuous* life.",
+"vengeance|n.|복수|revenge|He swore *vengeance*.",
+"complicit|adj.|공모한|involved in wrongdoing|He was *complicit* in the cheating.",
+"aberration|n.|일탈, 예외|something unusual or abnormal|His bad grade was an *aberration*.",
+"satire|n.|풍자|humor that criticizes|The show is a *satire* of politics.",
+"machination|n.|음모|a scheming plot|The villain's *machinations* failed.",
+"vindicate|v.|정당성을 입증하다|to prove someone was right|The final results *vindicated* her unusual strategy.",
+"rebuttal|n.|반박|a contradicting argument|She offered a strong *rebuttal*.",
+"obsequious|adj.|아첨하는|too eager to please|The *obsequious* waiter kept bowing.",
+"wily|adj.|교활한|clever and sly|The *wily* fox escaped again.",
+"deft|adj.|능숙한|quick and skillful|With a *deft* move, he scored.",
+"indict|v.|기소하다|to formally charge with a crime|He was *indicted* for fraud.",
+"benign|adj.|온화한, 양성의|gentle; harmless|The tumor was *benign*.",
+"impecunious|adj.|돈이 없는|poor|The *impecunious* student skipped lunch.",
+"pernicious|adj.|치명적인, 해로운|harmful in a gradual way|Gossip has a *pernicious* effect.",
+"sinister|adj.|불길한, 사악한|evil-looking|He had a *sinister* smile.",
+"bulwark|n.|방어벽|a defensive wall; protection|Education is a *bulwark* against poverty.",
+"demure|adj.|얌전한|modest and shy|She gave a *demure* smile.",
+"philanthropic|adj.|자선의|charitable|She does *philanthropic* work.",
+"procrastinate|v.|미루다|to delay doing something|Don't *procrastinate* on homework.",
+"tyranny|n.|폭정|cruel rule|The people rose against *tyranny*.",
+"indelible|adj.|지울 수 없는|permanent|The trip left an *indelible* memory.",
+"quell|v.|진압하다|to put an end to|Police *quelled* the riot.",
+"tirade|n.|장황한 비난|a long angry speech|He went on a *tirade* about traffic.",
+"protagonist|n.|주인공|the main character|The *protagonist* is a young wizard.",
+"aggrieved|adj.|억울해하는|feeling wronged|The *aggrieved* customer wanted a refund.",
+"impute|v.|~의 탓으로 돌리다|to attribute blame|They *imputed* the error to him.",
+"staid|adj.|고루한|serious and dull|The *staid* professor never joked.",
+"indigenous|adj.|토착의|native to a place|*Indigenous* people lived here for centuries.",
+"antecedent|n.|선례, 전례|something that came before|The ancient Greeks were *antecedents* of modern democracy.",
+"egregious|adj.|지독한|shockingly bad|That was an *egregious* error.",
+"callow|adj.|미숙한|young and inexperienced|The *callow* recruit made many mistakes.",
+"iconoclast|n.|우상 파괴자|one who attacks traditional beliefs|The artist was an *iconoclast* who broke all the rules.",
+"intangible|adj.|무형의|not physical|Trust is an *intangible* asset.",
+"spurious|adj.|가짜의|false|The claim was *spurious*.",
+"inchoate|adj.|초기의, 미완성의|just begun; undeveloped|Her plans were still *inchoate*.",
+"abrogate|v.|폐지하다|to cancel a law or agreement|The new leader *abrogated* the treaty.",
+"replete|adj.|가득한|filled|The book is *replete* with errors.",
+"abeyance|n.|중지, 보류|a state of temporary inactivity|The plan is in *abeyance* until spring.",
+"munificent|adj.|아주 후한|very generous|They received a *munificent* gift.",
+"gainsay|v.|부정하다|to deny|No one can *gainsay* her talent.",
+"undulate|v.|물결치다|to move in waves|The wheat *undulated* in the wind.",
+"impasse|n.|교착 상태|a deadlock|Talks reached an *impasse*.",
+"bequeath|v.|물려주다|to leave in a will|She *bequeathed* her house to her niece.",
+"reverberate|v.|울려 퍼지다|to echo|Thunder *reverberated* through the valley.",
+"jovial|adj.|쾌활한|cheerful and friendly|The *jovial* man told jokes.",
+"trepidation|n.|불안|fear|She entered with *trepidation*.",
+"quintessential|adj.|전형적인|the most perfect example|She is the *quintessential* teacher.",
+"listless|adj.|무기력한|without energy|He felt *listless* after the flu.",
+"moratorium|n.|일시 중지|a temporary ban|There's a *moratorium* on new building.",
+"frenetic|adj.|열광적인, 정신없는|fast and wild|The city has a *frenetic* pace.",
+"terse|adj.|간결한, 퉁명스러운|brief and abrupt|She gave a *terse* reply.",
+"elated|adj.|크게 기뻐하는|extremely happy|She was *elated* by the news.",
+"somber|adj.|침울한|dark and serious|The mood was *somber*.",
+"perfunctory|adj.|형식적인|done without care|He gave a *perfunctory* nod.",
+"dexterous|adj.|손재주가 좋은|skillful with hands|The *dexterous* juggler kept five balls in the air.",
+"raze|v.|완전히 파괴하다|to tear down completely|The old mall was *razed*.",
+"satiate|v.|충분히 만족시키다|to satisfy fully|The feast *satiated* everyone.",
+"exonerate|v.|혐의를 벗기다|to clear of guilt|DNA evidence *exonerated* him.",
+"perfidious|adj.|배신하는|disloyal|The *perfidious* spy sold secrets.",
+"callous|adj.|냉담한|insensitive and cruel|His *callous* remark hurt her.",
+"perpetrate|v.|저지르다|to commit a crime|Who *perpetrated* the prank?",
+"abate|v.|약해지다, 누그러지다|to become less intense|The storm *abated* by morning.",
+"cordial|adj.|정중한, 다정한|warm and polite|They gave us a *cordial* welcome.",
+"annex|v.|합병하다|to add territory|The country *annexed* the island.",
+"despot|n.|폭군|a cruel ruler|The *despot* jailed his critics.",
+"incisive|adj.|예리한|sharp and clear|She asked an *incisive* question.",
+"fallow|adj.|휴경 중인|unused; inactive|The field lay *fallow*.",
+"recompense|n.|보상|payment for loss|He received *recompense* for his injury.",
+"waive|v.|포기하다, 면제하다|to give up a right|The school *waived* the fee.",
+"infallible|adj.|절대 틀리지 않는|never wrong|No one is *infallible*.",
+"liability|n.|책임; 짐이 되는 것|legal responsibility; a disadvantage|His temper is a *liability*.",
+"bucolic|adj.|목가적인|relating to the countryside|They enjoyed a *bucolic* weekend on the farm.",
+"absolve|v.|면제하다, 용서하다|to free from blame|The court *absolved* him of all charges.",
+"coddle|v.|애지중지하다|to treat too gently|Don't *coddle* the kids.",
+"insipid|adj.|맛없는, 재미없는|bland|The soup was *insipid*.",
+"conscientious|adj.|양심적인, 성실한|careful to do what is right|She is a *conscientious* worker.",
+"astringent|adj.|신랄한; 수렴성의|sharp; causing tightening|Her *astringent* comments stung.",
+"revel|v.|매우 즐기다|to enjoy greatly|They *reveled* in their victory.",
+"scrupulous|adj.|꼼꼼한, 양심적인|very careful and honest|She is *scrupulous* about her work.",
+"intrepid|adj.|용감한|fearless|The *intrepid* explorers crossed the ice.",
+"obfuscate|v.|흐리게 하다|to make unclear|He *obfuscated* the facts with jargon.",
+"bereft|adj.|잃은, 빼앗긴|deprived of something|He was *bereft* of hope.",
+"ebb|v.|썰물이 되다, 약해지다|to flow back; to decline|His energy *ebbed* as the day went on.",
+"scant|adj.|부족한|barely enough|There was *scant* evidence.",
+"lurid|adj.|선정적인, 야한|shocking; vivid|The tabloid printed *lurid* details.",
+"chastise|v.|꾸짖다|to scold severely|The coach *chastised* the team.",
+"rescind|v.|철회하다, 취소하다|to officially take back|The school *rescinded* the new rule after students protested.",
+"refurbish|v.|새로 꾸미다|to renovate|They *refurbished* the old theater.",
+"lax|adj.|느슨한|not strict|Security was *lax*.",
+"elucidate|v.|설명하다|to make clear|Can you *elucidate* your point?",
+"verdant|adj.|푸릇푸릇한|green with plants|The hills were *verdant* after the rain.",
+"lethal|adj.|치명적인|deadly|The snake's bite is *lethal*.",
+"prognosis|n.|예후, 전망|a forecast|The doctor gave a good *prognosis*.",
+"superfluous|adj.|불필요한, 남아도는|more than is needed|Cut *superfluous* words to make your essay stronger.",
+"derision|n.|조롱|mockery|His idea was met with *derision*.",
+"besiege|v.|포위하다, 쇄도하다|to surround; to overwhelm|Fans *besieged* the star with questions.",
+"jettison|v.|버리다|to throw away|They *jettisoned* the old plan.",
+"deluge|n.|홍수, 쇄도|a flood|We received a *deluge* of emails.",
+"ambivalent|adj.|양면적인 감정을 가진|having mixed feelings|I'm *ambivalent* about moving: excited but nervous.",
+"extemporaneous|adj.|즉흥적인|done without preparation|She gave an *extemporaneous* speech.",
+"inveterate|adj.|상습적인|having a long habit|He's an *inveterate* liar.",
+"hoary|adj.|아주 오래된, 백발의|very old; gray-haired|He told a *hoary* old joke.",
+"heinous|adj.|극악한|shockingly evil|It was a *heinous* crime.",
+"pinnacle|n.|정점|the highest point|Winning gold was the *pinnacle* of her career.",
+"dwindle|v.|줄어들다|to shrink gradually|Our supplies *dwindled*.",
+"unfettered|adj.|구속받지 않는|free|She enjoyed *unfettered* access to the library.",
+"draconian|adj.|가혹한|extremely harsh|The new rules were *draconian*.",
+"extant|adj.|현존하는|still existing|Few copies of the book are *extant*.",
+"overture|n.|제안; 서곡|an opening offer; an intro to music|They made *overtures* of peace.",
+"melancholy|n.|우울|deep sadness|A feeling of *melancholy* came over him.",
+"pander|v.|영합하다|to cater to others' wishes|Politicians *pander* to voters.",
+"diligent|adj.|성실한, 부지런한|showing steady, careful effort|*Diligent* students review their notes every day.",
+"epiphany|n.|깨달음|a sudden realization|She had an *epiphany* about her future.",
+"trite|adj.|진부한|overused|The ending was *trite*.",
+"aplomb|n.|침착함|calm self-confidence|She handled the crisis with *aplomb*.",
+"contingent|adj.|~에 달린|dependent on|Our trip is *contingent* on the weather.",
+"derivative|adj.|모방한, 독창성 없는|copied from something else|The movie felt *derivative*.",
+"proffer|v.|제공하다|to offer|She *proffered* her hand.",
+"blasé|adj.|무관심한, 심드렁한|unimpressed from overexposure|She was *blasé* about the fancy hotel.",
+"inauspicious|adj.|불길한|not promising success|The trip had an *inauspicious* start.",
+"guile|n.|교활함|sly intelligence|The fox used *guile* to trick the crow.",
+"repercussion|n.|영향, 반향|an unintended consequence|The decision had serious *repercussions*.",
+"magnate|n.|거물|a wealthy business leader|He was a shipping *magnate*.",
+"haughty|adj.|거만한|arrogant|The *haughty* queen ignored the peasants.",
+"intransigent|adj.|비타협적인|unwilling to change|Both sides were *intransigent*.",
+"anachronism|n.|시대착오|something out of its time|A smartphone in a medieval movie is an *anachronism*.",
+"subjugate|v.|정복하다|to conquer|The empire *subjugated* its neighbors.",
+"nonchalant|adj.|태연한|calm and casual|She was *nonchalant* about the test.",
+"subversive|adj.|전복적인|seeking to undermine|The book was banned as *subversive*.",
+"mores|n.|관습|customs of a group|Social *mores* change over time.",
+"expedient|adj.|편리한, 임시방편의|convenient but maybe not right|It was *expedient* to lie.",
+"soporific|adj.|졸리게 하는|causing sleep|The lecture was *soporific*.",
+"paltry|adj.|하찮은|very small|He earned a *paltry* sum.",
+"peripheral|adj.|주변적인|on the edge; minor|That's a *peripheral* issue.",
+"prowess|n.|기량|great skill|She showed her *prowess* on the court.",
+"propitious|adj.|유리한|favorable|It was a *propitious* time to start.",
+"amnesty|n.|사면|an official pardon|The government granted *amnesty* to the prisoners.",
+"anomaly|n.|변칙, 이상|something unusual|The warm January was an *anomaly*.",
+"subterfuge|n.|속임수|a trick to hide something|He got in by *subterfuge*.",
+"fester|v.|곪다, 악화되다|to become worse over time|Anger *festered* between them.",
+"glean|v.|조금씩 얻다|to gather bit by bit|We *gleaned* facts from the report.",
+"circumspect|adj.|신중한|careful and cautious|Be *circumspect* about what you post.",
+"precipitous|adj.|가파른, 급격한|very steep; sudden|There was a *precipitous* drop in sales.",
+"proviso|n.|단서 조항|a condition|You can go, with the *proviso* that you're home by nine.",
+"pliable|adj.|잘 휘는, 유순한|easily bent or influenced|Clay is *pliable*.",
+"pervasive|adj.|만연한, 구석구석 퍼진|spreading through every part|The smell of smoke was *pervasive* throughout the house.",
+"inveigle|v.|꾀다|to persuade by trickery|He *inveigled* her into lending money.",
+"demeanor|n.|태도, 품행|outward behavior|She has a calm *demeanor*.",
+"hapless|adj.|불운한|unlucky|The *hapless* team lost again.",
+"assent|n.|동의|agreement|She nodded her *assent*.",
+"dilatory|adj.|늑장 부리는|slow; causing delay|His *dilatory* habits cost him the job.",
+"sluggish|adj.|느릿한|slow-moving|The computer is *sluggish*.",
+"attenuate|v.|약화시키다|to weaken|The walls *attenuate* the noise.",
+"transgress|v.|위반하다|to break a rule|He *transgressed* the law.",
+"capricious|adj.|변덕스러운|changing suddenly without reason|The *capricious* weather changed from sun to hail in an hour.",
+"dauntless|adj.|겁 없는|fearless|The *dauntless* explorer kept going.",
+"affront|n.|모욕|an insult|His comment was an *affront* to her pride.",
+"acerbic|adj.|신랄한|sharp and biting|Her *acerbic* review hurt the author.",
+"fraught|adj.|가득한|filled with something bad|The trip was *fraught* with danger.",
+"arable|adj.|경작할 수 있는|suitable for farming|The valley has *arable* land.",
+"deleterious|adj.|해로운|harmful|Pollution has *deleterious* effects.",
+"savor|v.|음미하다|to enjoy slowly|*Savor* every bite.",
+"solicitous|adj.|세심하게 배려하는|showing care|The nurse was *solicitous* of my comfort.",
+"edify|v.|교화하다|to teach and improve morally|The lecture was meant to *edify* students.",
+"baleful|adj.|해로운, 악의적인|threatening harm|He gave me a *baleful* look.",
+"belligerent|adj.|호전적인|hostile and aggressive|The *belligerent* man started a fight.",
+"jocular|adj.|익살스러운|joking|He was in a *jocular* mood.",
+"dispassionate|adj.|냉정한, 공정한|not influenced by emotion|She gave a *dispassionate* analysis.",
+"ramification|n.|결과, 영향|a consequence|Consider the *ramifications* of your choice.",
+"castigate|v.|혹평하다|to criticize severely|Critics *castigated* the film.",
+"acumen|n.|예리함, 통찰력|sharp judgment|She has strong business *acumen*.",
+"adjudicate|v.|판결하다|to act as a judge|A panel will *adjudicate* the contest.",
+"eulogy|n.|추도사|a speech praising the dead|He gave a moving *eulogy*.",
+"punitive|adj.|처벌의|meant to punish|The fine was *punitive*.",
+"perilous|adj.|위험한|dangerous|The climb was *perilous*.",
+"forgo|v.|포기하다|to go without|I'll *forgo* dessert tonight.",
+"hermetic|adj.|밀폐된|airtight; sealed|The jar has a *hermetic* seal.",
+"feckless|adj.|무책임한, 무능한|lacking purpose or ability|The *feckless* manager missed every deadline.",
+"furtive|adj.|몰래 하는|secretive; sneaky|He gave a *furtive* glance at the answers.",
+"anarchy|n.|무질서, 무정부 상태|a lack of order or government|Without rules, the game became *anarchy*.",
+"strident|adj.|귀에 거슬리는, 강경한|loud and harsh|Her *strident* voice filled the room.",
+"malcontent|n.|불평분자|a person who is always unhappy|A few *malcontents* complained about everything.",
+"squander|v.|낭비하다|to waste|Don't *squander* your talent.",
+"enthrall|v.|매혹하다|to captivate|The story *enthralled* the children.",
+"beguile|v.|현혹하다|to charm or trick|She *beguiled* everyone with her stories.",
+"guileless|adj.|순진한|innocent; without deceit|Her *guileless* smile won them over.",
+"fealty|n.|충성|loyalty|Knights swore *fealty* to the king.",
+"avarice|n.|탐욕|extreme greed|The king's *avarice* ruined the kingdom.",
+"pithy|adj.|간결하고 힘 있는|brief and meaningful|He gave a *pithy* summary.",
+"presumptuous|adj.|주제넘은|too bold|It's *presumptuous* to assume you'll win.",
+"concur|v.|동의하다|to agree|I *concur* with your opinion.",
+"laudable|adj.|칭찬할 만한|deserving praise|Her effort was *laudable*.",
+"parsimonious|adj.|인색한|extremely frugal|The *parsimonious* man never tipped.",
+"flout|v.|무시하다|to openly disobey|He *flouted* the rules.",
+"innocuous|adj.|무해한, 악의 없는|not harmful or offensive|The question seemed *innocuous*, but it started an argument.",
+"fatuous|adj.|어리석은|silly and pointless|He made a *fatuous* remark.",
+"amity|n.|친선|friendship|The two nations lived in *amity*.",
+"cognizant|adj.|인식하고 있는|aware|She was *cognizant* of the risks.",
+"bristle|v.|발끈하다|to react angrily|She *bristled* at the insult.",
+"contrite|adj.|뉘우치는|feeling sorry|He was *contrite* after the fight.",
+"itinerant|adj.|떠돌아다니는|traveling from place to place|The *itinerant* musician played in many towns.",
+"opportune|adj.|시기적절한|well-timed|It was an *opportune* moment to ask.",
+"perspicacious|adj.|통찰력 있는|having keen insight|A *perspicacious* reader noticed the clue.",
+"tedium|n.|지루함|boredom|The *tedium* of the long drive wore us down.",
+"covert|adj.|은밀한|secret|It was a *covert* operation.",
+"hyperbole|n.|과장법|extreme exaggeration|\"I've told you a million times\" is *hyperbole*.",
+"chagrin|n.|분함, 원통함|annoyance from embarrassment|To his *chagrin*, he tripped on stage.",
+"grimace|n.|찡그린 얼굴|a twisted facial expression|She made a *grimace* at the taste.",
+"diminutive|adj.|아주 작은|tiny|The *diminutive* puppy fit in my hand.",
+"engender|v.|낳다, 불러일으키다|to cause|Kindness *engenders* trust.",
+"probity|n.|정직성|honesty|The judge is known for her *probity*.",
+"amenity|n.|편의 시설|a useful feature|The hotel has many *amenities*.",
+"epithet|n.|별칭, 욕설|a descriptive name; an insult|\"The Great\" is an *epithet* for Alexander.",
+"bellicose|adj.|호전적인|eager to fight|The *bellicose* leader threatened war.",
+"berate|v.|호되게 꾸짖다|to scold angrily|The coach *berated* the players.",
+"pompous|adj.|거만한|self-important|The *pompous* man talked about himself.",
+"atrophy|v.|위축되다|to waste away|Muscles *atrophy* without use.",
+"abridge|v.|요약하다, 축약하다|to shorten|This is an *abridged* version of the novel.",
+"ameliorate|v.|개선하다|to make better|New laws *ameliorated* working conditions.",
+"bane|n.|골칫거리|a cause of trouble|Mosquitoes are the *bane* of summer camping.",
+"abdicate|v.|퇴위하다, 포기하다|to give up a position or duty|The king *abdicated* the throne.",
+"gambit|n.|책략|a clever opening move|His *gambit* worked.",
+"accolade|n.|찬사, 상|praise or an award|The film received many *accolades*.",
+"wistful|adj.|아쉬워하는|longing with sadness|She gave a *wistful* smile.",
+"jargon|n.|전문 용어|special words used by a group|Medical *jargon* confuses patients.",
+"bombastic|adj.|과장된|using pompous language|His *bombastic* speech bored us.",
+"clemency|n.|관용, 자비|mercy|The judge showed *clemency*.",
+"incipient|adj.|초기의|beginning to develop|He noticed the *incipient* signs of a cold.",
+"lithe|adj.|유연한|flexible and graceful|The *lithe* dancer leaped across the stage.",
+"bastion|n.|요새, 보루|a stronghold|The library is a *bastion* of free thought.",
+"notoriety|n.|악명|fame for something bad|He gained *notoriety* for the scandal.",
+"vigor|n.|활력|strength and energy|He worked with *vigor*.",
+"irksome|adj.|짜증 나는|annoying|Waiting in line is *irksome*.",
+"obeisance|n.|경의|a show of respect|They bowed in *obeisance*.",
+"abscond|v.|도주하다|to leave secretly, often with stolen goods|The thief *absconded* with the jewels.",
+"platitude|n.|진부한 말|an overused remark|\"Everything happens for a reason\" is a *platitude*.",
+"virtuoso|n.|거장|a highly skilled performer|He's a piano *virtuoso*.",
+"punctilious|adj.|꼼꼼한|very careful about details|She is *punctilious* about deadlines.",
+"palpable|adj.|뚜렷한, 만질 수 있는|easily felt|The tension was *palpable*.",
+"ascetic|adj.|금욕적인|avoiding pleasure|The monk lived an *ascetic* life.",
+"fledgling|adj.|신생의, 미숙한|new and inexperienced|It's a *fledgling* company.",
+"exultant|adj.|크게 기뻐하는|triumphantly happy|The *exultant* team lifted the trophy.",
+"penchant|n.|애호, 경향|a strong liking|She has a *penchant* for spicy food.",
+"circuitous|adj.|우회하는|roundabout|We took a *circuitous* route.",
+"orthodox|adj.|정통의|traditional|He uses *orthodox* methods.",
+"quixotic|adj.|비현실적인|idealistic but unrealistic|His *quixotic* plan failed.",
+"collateral|adj.|부수적인|additional; secondary|The storm caused *collateral* damage.",
+"incorrigible|adj.|구제 불능의|unable to be corrected|He's an *incorrigible* prankster.",
+"vagrant|n.|부랑자|a homeless wanderer|A *vagrant* slept on the bench.",
+"dictum|n.|격언, 공식 견해|a formal statement|He followed the *dictum* \"less is more.\"",
+"surmise|v.|추측하다|to guess|I *surmised* he was upset.",
+"brusque|adj.|퉁명스러운|abrupt in manner|She gave a *brusque* reply.",
+"intimate|v.|넌지시 알리다|to hint|She *intimated* that she might quit.",
+"prudent|adj.|신중한|careful and wise|It is *prudent* to save some money for emergencies.",
+"infringe|v.|침해하다|to violate|The law *infringes* on free speech.",
+"imprudent|adj.|경솔한|unwise|It was *imprudent* to spend all his savings.",
+"subside|v.|가라앉다|to become less intense|The pain *subsided*.",
+"aggrandize|v.|과장하다, 높이다|to make seem greater|He *aggrandized* his role in the project.",
+"monotonous|adj.|단조로운|dull and repetitive|The work was *monotonous*.",
+"emblematic|adj.|상징적인|serving as a symbol|The eagle is *emblematic* of freedom.",
+"implicate|v.|연루시키다|to show someone is involved|The evidence *implicated* the mayor.",
+"formidable|adj.|가공할, 만만찮은|impressive and frightening|She is a *formidable* opponent.",
+"surly|adj.|퉁명스러운|bad-tempered|The *surly* clerk ignored us.",
+"dormant|adj.|휴면 중인|inactive; asleep|The volcano has been *dormant* for centuries.",
+"arid|adj.|건조한|very dry|Nothing grows in the *arid* land.",
+"latitude|n.|자유, 위도|freedom of action|The teacher gave us *latitude* in choosing topics.",
+"glut|n.|과잉|too much supply|There's a *glut* of apples this year.",
+"fractious|adj.|다루기 힘든, 싸우기 좋아하는|unruly|The *fractious* crowd pushed forward.",
+"poignant|adj.|가슴 아픈|deeply moving|It was a *poignant* farewell.",
+"opulent|adj.|호화로운|luxurious|They stayed in an *opulent* hotel.",
+"prodigal|adj.|낭비하는|wastefully extravagant|The *prodigal* son spent everything.",
+"cogent|adj.|설득력 있는|clear and convincing|She made a *cogent* argument.",
+"agitate|v.|선동하다, 흔들다|to stir up|The speech *agitated* the crowd.",
+"replicate|v.|복제하다, 재현하다|to copy exactly|Scientists *replicated* the experiment.",
+"insurgent|n.|반란자|a rebel|*Insurgents* attacked the base.",
+"sedition|n.|선동|encouraging rebellion|He was charged with *sedition*.",
+"squalid|adj.|불결한|filthy|They lived in *squalid* conditions.",
+"crass|adj.|무신경한|crude and insensitive|His *crass* joke offended everyone.",
+"adversary|n.|적, 상대|an opponent|Chess pits you against a single *adversary*.",
+"levity|n.|경솔함, 유머|lightness; humor|His joke added *levity* to the meeting.",
+"caustic|adj.|부식성의, 신랄한|burning; sarcastic|He made a *caustic* comment.",
+"blatant|adj.|노골적인|very obvious|That was a *blatant* lie.",
+"felicitous|adj.|적절한|well chosen|It was a *felicitous* choice of words.",
+"vanquish|v.|정복하다|to defeat completely|The hero *vanquished* the dragon.",
+"xenophobia|n.|외국인 혐오|fear or hatred of foreigners|The speech was full of *xenophobia*.",
+"recluse|n.|은둔자|one who lives alone|The *recluse* never left his house.",
+"ebullient|adj.|열정이 넘치는|cheerful and full of energy|The *ebullient* crowd cheered.",
+"tortuous|adj.|구불구불한, 복잡한|twisting; complicated|We drove a *tortuous* mountain road.",
+"treatise|n.|논문|a formal written study|He wrote a *treatise* on economics.",
+"altercation|n.|언쟁|a noisy argument|There was an *altercation* in the parking lot.",
+"presage|v.|예고하다|to foretell|Dark clouds *presaged* a storm.",
+"gaunt|adj.|수척한|thin and bony|He looked *gaunt* after the illness.",
+"clandestine|adj.|비밀의|secret|They held a *clandestine* meeting.",
+"impunity|n.|처벌받지 않음|freedom from punishment|He broke the rules with *impunity*.",
+"archetype|n.|원형, 전형|a typical example|He is the *archetype* of a hero.",
+"forthright|adj.|솔직한|direct and honest|He was *forthright* about his mistakes.",
+"dissemble|v.|감추다, 시치미 떼다|to hide true feelings|He *dissembled* his fear.",
+"exhort|v.|권고하다|to strongly urge|The coach *exhorted* us to try harder.",
+"expunge|v.|지우다, 삭제하다|to erase completely|His record was *expunged*.",
+"inexplicable|adj.|설명할 수 없는|unable to be explained|There was an *inexplicable* noise.",
+"remunerate|v.|보수를 주다|to pay for work|Volunteers are not *remunerated*.",
+"rejuvenate|v.|활기를 되찾게 하다|to make young again|A vacation will *rejuvenate* you.",
+"adage|n.|격언|a well-known saying|The old *adage* says, \"Practice makes perfect.\"",
+"flaunt|v.|과시하다|to show off|He *flaunted* his new car.",
+"transcend|v.|초월하다|to go beyond limits|Music *transcends* language.",
+"allure|n.|매력|attractive charm|The *allure* of the city drew many people.",
+"scathing|adj.|통렬한|harshly critical|The critic wrote a *scathing* review.",
+"strenuous|adj.|격렬한|requiring great effort|Avoid *strenuous* exercise.",
+"provincial|adj.|편협한, 지방의|narrow-minded|His views are *provincial*.",
+"accentuate|v.|강조하다|to make more noticeable|The dress *accentuates* her eyes.",
+"respite|n.|휴식, 유예|a short rest|The rain gave us a *respite* from the heat.",
+"piety|n.|경건함|religious devotion|She is known for her *piety*.",
+"indifferent|adj.|무관심한|not caring either way|She seemed *indifferent* to the results.",
+"incarcerate|v.|투옥하다|to imprison|He was *incarcerated* for five years.",
+"apposite|adj.|적절한|very appropriate|She made an *apposite* remark.",
+"tenet|n.|교리, 원칙|a principle|Kindness is a *tenet* of her faith.",
+"succumb|v.|굴복하다|to give in|She *succumbed* to temptation.",
+"benefactor|n.|후원자|one who gives help|An anonymous *benefactor* paid for the library.",
+"conciliatory|adj.|회유하는, 달래는|meant to end a disagreement|She made a *conciliatory* gesture by apologizing first.",
+"torpor|n.|무기력|sluggishness|After lunch, a *torpor* came over the class.",
+"surmount|v.|극복하다|to overcome|She *surmounted* every obstacle.",
+"contravene|v.|위반하다|to go against a rule|The plan *contravenes* the law.",
+"variegated|adj.|얼룩덜룩한|having many colors|The plant has *variegated* leaves.",
+"omniscient|adj.|전지적인|all-knowing|The story has an *omniscient* narrator.",
+"lassitude|n.|나른함|tiredness|Summer heat brings *lassitude*.",
+"espouse|v.|지지하다|to adopt or support|She *espouses* healthy living.",
+"mutinous|adj.|반항적인|rebellious|The *mutinous* sailors took the ship.",
+"reprehensible|adj.|비난받을 만한|deserving blame|Cheating is *reprehensible*.",
+"evince|v.|나타내다|to show clearly|Her face *evinced* surprise.",
+"plight|n.|곤경|a difficult situation|The *plight* of refugees moved us.",
+"dour|adj.|시무룩한, 엄한|stern and gloomy|The *dour* guard never smiled.",
+"auspicious|adj.|길조의|showing signs of future success|It was an *auspicious* start to the season.",
+"dirge|n.|만가, 장송곡|a song for the dead|The band played a slow *dirge*.",
+"frugal|adj.|검소한|careful with money|He's *frugal* and never wastes food.",
+"plenitude|n.|풍부함|abundance|There's a *plenitude* of food.",
+"wry|adj.|비꼬는 듯한|dryly humorous|She gave a *wry* smile.",
+"condescending|adj.|거들먹거리는|acting superior|His *condescending* tone annoyed me.",
+"tacit|adj.|암묵적인|understood without words|They had a *tacit* agreement.",
+"embezzle|v.|횡령하다|to steal money entrusted to you|The clerk *embezzled* thousands.",
+"gregarious|adj.|사교적인|enjoying the company of others|My *gregarious* sister talks to everyone at parties.",
+"commiserate|v.|동정하다|to share sympathy|We *commiserated* over our bad grades.",
+"tantamount|adj.|~와 마찬가지인|equivalent to|His silence was *tantamount* to a confession.",
+"staunch|adj.|확고한|loyal and firm|He is a *staunch* supporter.",
+"antipathy|n.|반감|strong dislike|He felt *antipathy* toward bullies.",
+"petulant|adj.|토라지는|childishly sulky|The *petulant* child refused to eat.",
+"abet|v.|부추기다, 방조하다|to help someone do wrong|He was charged with aiding and *abetting* the thief.",
+"shirk|v.|회피하다|to avoid a duty|Don't *shirk* your chores.",
+"aspersion|n.|비방|an attack on someone's reputation|Don't cast *aspersions* on his honesty.",
+"usurp|v.|빼앗다, 찬탈하다|to take power wrongfully|He *usurped* the throne.",
+"salubrious|adj.|건강에 좋은|healthy|The mountain air is *salubrious*.",
+"conjure|v.|불러내다, 떠올리게 하다|to bring to mind; to make appear|The smell *conjured* memories of home.",
+"impeach|v.|탄핵하다|to charge an official with wrongdoing|Congress voted to *impeach* the official.",
+"chronic|adj.|만성적인|lasting a long time|He has *chronic* back pain.",
+"efface|v.|지우다|to erase|Time had *effaced* the writing.",
+"blight|n.|병충해, 해악|something that spoils|Graffiti is a *blight* on the neighborhood.",
+"unwitting|adj.|모르는 사이의|unaware|He was an *unwitting* helper in the scam.",
+"ostentatious|adj.|과시하는|showy|They live in an *ostentatious* mansion.",
+"ruse|n.|계략|a trick|The phone call was a *ruse*.",
+"vacillate|v.|망설이다|to waver between choices|She *vacillated* between two colleges.",
+"estranged|adj.|소원해진|no longer close|He is *estranged* from his brother.",
+"partiality|n.|편애|bias; fondness|He showed *partiality* to his son.",
+"inordinate|adj.|과도한|excessive|He spent an *inordinate* amount of time gaming.",
+"slander|n.|중상, 비방|false spoken statements|He sued for *slander*.",
+"accost|v.|다가가 말을 걸다|to approach boldly|A stranger *accosted* me on the street.",
+"plunder|v.|약탈하다|to steal by force|Pirates *plundered* the town.",
+"plaintive|adj.|애처로운|sad-sounding|We heard a *plaintive* cry.",
+"demagogue|n.|선동가|a leader who appeals to emotions and prejudice|The *demagogue* stirred up anger.",
+"kindle|v.|불붙이다, 일으키다|to start a fire; to arouse|The trip *kindled* her love of history.",
+"grandiose|adj.|거창한|impressive but too ambitious|He had *grandiose* plans for a theme park.",
+"officious|adj.|참견하기 좋아하는|too eager to give orders|The *officious* guard checked our bags twice.",
+"imbibe|v.|마시다, 흡수하다|to drink; to absorb|Children *imbibe* their parents' values.",
+"convoluted|adj.|복잡한|very complicated|The plot was too *convoluted*.",
+"abjure|v.|포기하다, 버리다|to formally give up a belief|He *abjured* his old views.",
+"aloof|adj.|냉담한, 거리를 두는|distant and cool|The new student seemed *aloof*.",
+"precocious|adj.|조숙한|advanced for one's age|The *precocious* child read at three.",
+"decadent|adj.|퇴폐적인, 호사스러운|indulgent; in decline|The cake was rich and *decadent*.",
+"servile|adj.|굽실거리는|overly eager to serve|His *servile* manner was annoying.",
+"craven|adj.|비겁한|cowardly|It was a *craven* act.",
+"assail|v.|공격하다|to attack violently|Critics *assailed* the new policy.",
+"hegemony|n.|패권|dominance of one group|The empire held *hegemony* over the region.",
+"insular|adj.|편협한, 고립된|narrow-minded; isolated|The town was *insular*.",
+"fiasco|n.|대실패|a complete failure|The party was a *fiasco*.",
+"raucous|adj.|시끄러운|loud and rough|The party was *raucous*.",
+"illicit|adj.|불법의|not allowed by law|Police found *illicit* goods.",
+"rigorous|adj.|엄격한, 철저한|very thorough|The training is *rigorous*.",
+"debunk|v.|틀렸음을 밝히다|to expose as false|Scientists *debunked* the myth.",
+"disparate|adj.|이질적인, 전혀 다른|very different from each other|The novel weaves *disparate* characters into one story.",
+"rash|adj.|성급한|hasty|It was a *rash* decision.",
+"colloquial|adj.|구어체의|informal in language|\"Gonna\" is a *colloquial* word.",
+"avow|v.|공언하다|to declare openly|He *avowed* his loyalty.",
+"umbrage|n.|불쾌감|offense|She took *umbrage* at his remark.",
+"credulous|adj.|잘 믿는|too ready to believe|*Credulous* readers believed the fake news.",
+"corroborate|v.|확증하다, 뒷받침하다|to confirm with more evidence|Two witnesses *corroborated* her story.",
+"collusion|n.|공모|secret cooperation for wrong|The companies were accused of *collusion*.",
+"remorse|n.|후회, 양심의 가책|deep regret|He showed no *remorse*.",
+"pandemonium|n.|대혼란|wild chaos|*Pandemonium* broke out after the goal.",
+"amenable|adj.|순순히 따르는|open to suggestion|She was *amenable* to the plan.",
+"affinity|n.|친밀감, 끌림|a natural liking|She has an *affinity* for animals.",
+"abstruse|adj.|난해한|hard to understand|The lecture was too *abstruse* for most students.",
+"minuscule|adj.|아주 작은|extremely tiny|The bug was *minuscule*.",
+"whimsical|adj.|기발한, 변덕스러운|playfully unusual|The book has *whimsical* drawings.",
+"kinetic|adj.|운동의|relating to motion|A moving car has *kinetic* energy.",
+"euphemism|n.|완곡어법|a mild word for something harsh|\"Passed away\" is a *euphemism* for \"died.\"",
+"qualm|n.|양심의 가책, 불안|a feeling of doubt|She had no *qualms* about quitting.",
+"ineffable|adj.|형언할 수 없는|too great to describe|The view gave her *ineffable* joy.",
+"sundry|adj.|여러 가지의|various|The drawer held *sundry* items.",
+"divest|v.|빼앗다, 처분하다|to strip of; to sell off|The company *divested* its oil stocks.",
+"unkempt|adj.|헝클어진|messy|His hair was *unkempt*.",
+"unwieldy|adj.|다루기 힘든|hard to handle|The box was *unwieldy*.",
+"recondite|adj.|난해한|little known; obscure|The book covers *recondite* topics.",
+"abstemious|adj.|절제하는|moderate in eating and drinking|He was *abstemious* and rarely ate dessert.",
+"paraphrase|v.|바꿔 말하다|to restate in other words|*Paraphrase* the paragraph.",
+"vacuous|adj.|멍한, 공허한|empty of ideas|He gave a *vacuous* answer.",
+"archaic|adj.|낡은, 고대의|very old-fashioned|\"Thou\" is an *archaic* word.",
+"incumbent|n.|현직자|one who holds an office|The *incumbent* won reelection.",
+"mirth|n.|즐거움, 웃음|amusement and laughter|The room was filled with *mirth*.",
+"arrogate|v.|부당하게 차지하다|to claim without right|He *arrogated* power to himself.",
+"cursory|adj.|대충 하는|quick and not thorough|She gave the essay a *cursory* glance.",
+"advent|n.|도래, 출현|the arrival of something important|The *advent* of the internet changed everything.",
+"delude|v.|속이다|to mislead|Don't *delude* yourself.",
+"quandary|n.|곤경, 진퇴양난|a state of uncertainty|I'm in a *quandary* about what to do.",
+"erudite|adj.|박식한|very learned|The *erudite* professor knew six languages.",
+"harangue|n.|장황한 비난|a long angry speech|He gave a *harangue* about manners.",
+"impending|adj.|임박한|about to happen|They feared the *impending* storm.",
+"oust|v.|몰아내다|to force out|The board *ousted* the CEO.",
+"solace|n.|위안|comfort|She found *solace* in music.",
+"resilient|adj.|회복력 있는|able to recover quickly|*Resilient* people bounce back from failure.",
+"wield|v.|휘두르다, 행사하다|to hold and use|She *wields* great influence.",
+"acrimony|n.|신랄함, 악감정|bitterness|The meeting ended in *acrimony*.",
+"egalitarian|adj.|평등주의의|believing all people are equal|They want an *egalitarian* society.",
+"construe|v.|해석하다|to interpret|His silence was *construed* as agreement.",
+"immutable|adj.|불변의|unchangeable|The laws of physics are *immutable*.",
+"adroit|adj.|능숙한|skillful, especially with hands or mind|He's an *adroit* negotiator.",
+"assiduous|adj.|근면한|careful and hardworking|She is an *assiduous* student.",
+"desultory|adj.|산만한, 두서없는|lacking a plan|They had a *desultory* conversation.",
+"accretion|n.|축적, 증가|gradual growth by adding|The island formed by the *accretion* of sand.",
+"disparage|v.|깎아내리다|to speak badly of|He *disparaged* his rival's work.",
+"gusto|n.|기쁨, 열정|great enjoyment|He ate with *gusto*.",
+"nefarious|adj.|사악한|wicked|The villain had a *nefarious* plan.",
+"burnish|v.|광내다, 개선하다|to polish|He tried to *burnish* his image.",
+"zealot|n.|광신자|a fanatical person|He's a *zealot* about recycling.",
+"inure|v.|익숙하게 하다|to accustom to something unpleasant|Years in Alaska *inured* him to cold.",
+"effusive|adj.|감정이 넘치는|showing great feeling|He was *effusive* in his thanks.",
+"urbane|adj.|세련된|polite and refined|The *urbane* host charmed everyone.",
+"indulgent|adj.|관대한, 너그러운|allowing too much|*Indulgent* parents gave him everything.",
+"resolute|adj.|단호한|determined|She was *resolute* in her decision.",
+"dishearten|v.|낙담시키다|to discourage|The loss *disheartened* the team.",
+"prodigious|adj.|엄청난|impressively large|She has a *prodigious* memory.",
+"resignation|n.|체념; 사직|acceptance of something bad; quitting|She sighed in *resignation*.",
+"indolent|adj.|게으른|lazy|The *indolent* cat slept all day.",
+"enigmatic|adj.|수수께끼 같은|mysterious|She gave an *enigmatic* smile.",
+"stymie|v.|방해하다|to block|Bad weather *stymied* our plans.",
+"posterity|n.|후세|future generations|Save these letters for *posterity*.",
+"forlorn|adj.|쓸쓸한|sad and lonely|The *forlorn* puppy waited by the door.",
+"conflagration|n.|대화재|a large fire|The *conflagration* destroyed the forest.",
+"acquit|v.|무죄를 선고하다|to declare not guilty|The jury *acquitted* the defendant.",
+"cupidity|n.|탐욕|greed for money|His *cupidity* knew no limits.",
+"sullen|adj.|뚱한|silently resentful|The *sullen* teen refused to talk.",
+"mendacious|adj.|거짓말하는|lying|The *mendacious* report misled readers.",
+"effrontery|n.|뻔뻔함|shameless boldness|She had the *effrontery* to blame me.",
+"irascible|adj.|성마른|easily angered|The *irascible* chef yelled at everyone.",
+"culpable|adj.|책임이 있는|deserving blame|He was found *culpable* for the accident.",
+"denizen|n.|거주자|an inhabitant|The *denizens* of the forest hid from the storm.",
+"repugnant|adj.|불쾌한|disgusting|The idea was *repugnant* to her.",
+"superficial|adj.|피상적인|shallow|His knowledge is *superficial*.",
+"eschew|v.|피하다|to avoid on purpose|She *eschews* junk food.",
+"cower|v.|움츠리다|to crouch in fear|The dog *cowered* during the storm.",
+"intractable|adj.|다루기 힘든|hard to manage or solve|It's an *intractable* problem.",
+"verbatim|adv.|글자 그대로|word for word|She repeated the speech *verbatim*.",
+"inane|adj.|어리석은|silly; pointless|They had an *inane* conversation.",
+"brazen|adj.|뻔뻔한|bold and shameless|It was a *brazen* attempt to cheat.",
+"slovenly|adj.|단정치 못한|messy|His room was *slovenly*.",
+"adulation|n.|과찬, 아첨|excessive admiration|The singer enjoyed the fans' *adulation*.",
+"pervade|v.|널리 퍼지다|to spread through|Fear *pervaded* the town.",
+"placate|v.|달래다|to calm|He *placated* the angry customer.",
+"discomfit|v.|당황하게 하다|to make uneasy|The question *discomfited* him.",
+"malfeasance|n.|부정행위|wrongdoing by an official|The mayor was accused of *malfeasance*.",
+"prevaricate|v.|얼버무리다|to avoid the truth|Stop *prevaricating* and answer!",
+"reticent|adj.|말이 없는|reserved|He was *reticent* about his past.",
+"obtuse|adj.|둔한|slow to understand|Don't be so *obtuse*!",
+"semblance|n.|외관, 겉모습|an outward appearance|We restored some *semblance* of order.",
+"renown|n.|명성|fame|She gained *renown* as a writer.",
+"sycophant|n.|아첨꾼|a flatterer|The king was surrounded by *sycophants*.",
+"disseminate|v.|퍼뜨리다|to spread widely|The internet *disseminates* information quickly.",
+"consecrate|v.|신성하게 하다|to make sacred|The church was *consecrated* in 1900.",
+"exodus|n.|대탈출|a mass departure|There was an *exodus* from the city.",
+"deprecate|v.|비난하다, 낮추다|to express disapproval of|She *deprecated* her own work.",
+"prodigy|n.|신동|a young genius|Mozart was a musical *prodigy*.",
+"surreptitious|adj.|은밀한|secret|She took a *surreptitious* look at her phone.",
+"abstain|v.|삼가다, 기권하다|to choose not to do|Three members *abstained* from voting.",
+"predilection|n.|선호|a preference|He has a *predilection* for jazz.",
+"plethora|n.|과다|too much|There's a *plethora* of options.",
+"exuberant|adj.|활기 넘치는|full of energy and joy|The *exuberant* puppy jumped on everyone.",
+"decry|v.|공공연히 비난하다|to publicly condemn|Critics *decried* the decision.",
+"oblivion|n.|망각|the state of being forgotten|The song faded into *oblivion*.",
+"purport|v.|주장하다|to claim falsely|The letter *purports* to be from the bank.",
+"restitution|n.|배상|repayment for loss|He paid *restitution* to the victims.",
+"sequester|v.|격리하다|to isolate|The jury was *sequestered*.",
+"paucity|n.|부족|scarcity|There is a *paucity* of evidence.",
+"notorious|adj.|악명 높은|famous for something bad|The road is *notorious* for accidents.",
+"impervious|adj.|영향받지 않는, 통과시키지 않는|unaffected; not letting through|The coat is *impervious* to rain.",
+"paragon|n.|모범|a perfect example|She is a *paragon* of virtue.",
+"prosaic|adj.|평범한|dull; ordinary|His life seemed *prosaic*.",
+"explicate|v.|해설하다|to explain in detail|The teacher *explicated* the poem.",
+"sacrosanct|adj.|신성불가침의|too important to change|Family dinner is *sacrosanct* in our home.",
+"reproach|v.|나무라다|to express disapproval|She *reproached* him for being late.",
+"maelstrom|n.|대혼란|a violent whirlpool; chaos|The city fell into a *maelstrom* of violence.",
+"insidious|adj.|서서히 퍼지는, 교활한|harmful in a sneaky way|The disease is *insidious*.",
+"fallible|adj.|틀릴 수 있는|capable of mistakes|Everyone is *fallible*.",
+"annotate|v.|주석을 달다|to add notes to|*Annotate* the poem as you read.",
+"contemptuous|adj.|경멸하는|showing scorn|She gave a *contemptuous* look.",
+"disinterested|adj.|공정한, 사심 없는|unbiased|We need a *disinterested* judge.",
+"cataclysm|n.|대격변|a violent upheaval|The war was a *cataclysm*.",
+"gratify|v.|만족시키다|to please|The results *gratified* the team.",
+"maverick|n.|독불장군, 이단아|an independent thinker|She's a *maverick* in her field.",
+"adhere|v.|고수하다, 들러붙다|to stick to|Please *adhere* to the rules.",
+"noisome|adj.|불쾌한, 악취 나는|smelly; offensive|A *noisome* smell came from the trash.",
+"tenacious|adj.|끈질긴|not giving up easily|The *tenacious* climber reached the summit on her third try.",
+"divulge|v.|누설하다|to reveal a secret|He refused to *divulge* the password.",
+"candid|adj.|솔직한|honest and direct|Thank you for your *candid* feedback.",
+"equanimity|n.|평정|calmness|He accepted the loss with *equanimity*.",
+"impertinent|adj.|무례한|rude; not respectful|The student asked an *impertinent* question.",
+"tractable|adj.|다루기 쉬운|easily managed|The problem is more *tractable* now.",
+"malady|n.|병, 병폐|a disease or problem|Loneliness is a modern *malady*.",
+"veracity|n.|진실성|truthfulness|We questioned the *veracity* of his story.",
+"sublime|adj.|숭고한|awe-inspiring|The view was *sublime*.",
+"panacea|n.|만병통치약|a cure for everything|Money is not a *panacea*.",
+"unabashed|adj.|부끄러워하지 않는|not embarrassed|He's an *unabashed* fan of musicals.",
+"abrasive|adj.|거친, 신경을 긁는|rough; harsh in manner|His *abrasive* tone upset everyone.",
+"recalcitrant|adj.|반항하는|uncooperative|The *recalcitrant* mule refused to move.",
+"enmity|n.|적대감|hostility|There was long *enmity* between the families.",
+"viscous|adj.|끈적끈적한|thick and sticky|Honey is *viscous*.",
+"indignant|adj.|분개한|angry at unfairness|She was *indignant* at being blamed.",
+"gamut|n.|전 범위|the full range|She showed the *gamut* of emotions.",
+"maxim|n.|격언|a short rule of conduct|His favorite *maxim* is \"honesty first.\"",
+"sardonic|adj.|냉소적인|mocking|He gave a *sardonic* smile.",
+"volition|n.|의지|free will|She left of her own *volition*.",
+"cliché|n.|상투적인 말|an overused phrase|\"Better late than never\" is a *cliché*.",
+"diatribe|n.|맹비난|a bitter attack in words|He launched into a *diatribe* about taxes.",
+"hackneyed|adj.|진부한|overused|The story used a *hackneyed* plot.",
+"precarious|adj.|불안정한|unsafe; unstable|The vase was in a *precarious* position.",
+"implacable|adj.|달랠 수 없는|unable to be calmed|He was an *implacable* enemy.",
+"allay|v.|가라앉히다|to calm fears|The doctor *allayed* our worries.",
+"exalt|v.|높이다, 찬양하다|to praise highly|The poem *exalts* nature.",
+"tranquil|adj.|고요한|calm and peaceful|The lake was *tranquil*.",
+"saturate|v.|흠뻑 적시다, 포화시키다|to soak completely|The rain *saturated* the field.",
+"pristine|adj.|깨끗한, 원래 상태의|in perfect condition|The beach was *pristine*.",
+"eminent|adj.|저명한|famous and respected|An *eminent* scientist spoke today.",
+"impeccable|adj.|흠잡을 데 없는|perfect|She has *impeccable* taste.",
+"grovel|v.|굽실거리다|to act humbly to gain favor|He *groveled* for forgiveness.",
+"predecessor|n.|전임자|one who came before|She replaced her *predecessor* as captain.",
+"robust|adj.|튼튼한|strong and healthy|The economy is *robust*.",
+"eclectic|adj.|다양한 것을 취하는|drawn from many sources|She has *eclectic* taste in music.",
+"hiatus|n.|중단, 공백|a break|The band went on *hiatus*.",
+"flagrant|adj.|노골적인|obvious and offensive|It was a *flagrant* foul.",
+"predatory|adj.|약탈적인, 포식성의|preying on others|Sharks are *predatory* fish.",
+"sovereign|adj.|주권을 가진|independent and self-ruling|It is a *sovereign* nation.",
+"palatable|adj.|맛있는, 받아들일 만한|pleasant to taste; acceptable|The plan was *palatable* to both sides.",
+"wanton|adj.|무자비한, 이유 없는|deliberate and unprovoked|The *wanton* destruction shocked the town.",
+"luminous|adj.|빛나는|bright; glowing|The moon was *luminous*.",
+"chide|v.|나무라다|to scold mildly|Mom *chided* me for being late.",
+"imperious|adj.|오만한, 고압적인|bossy and arrogant|The *imperious* boss gave orders.",
+"transitory|adj.|일시적인|brief|Fame can be *transitory*.",
+"palliate|v.|완화하다|to ease without curing|The drug *palliates* pain.",
+"appall|v.|소름 끼치게 하다|to shock and disgust|The cruelty *appalled* everyone.",
+"heresy|n.|이단|a belief against accepted views|In his town, liking the rival team was *heresy*.",
+"legacy|n.|유산|something handed down|His *legacy* lives on in his music.",
+"foible|n.|작은 결점|a minor weakness|Everyone has their *foibles*.",
+"lionize|v.|떠받들다|to treat as a celebrity|The media *lionized* the young hero.",
+"impetus|n.|자극, 추진력|a driving force|The prize gave *impetus* to the research.",
+"cosmopolitan|adj.|국제적인|including many cultures|New York is a *cosmopolitan* city.",
+"polemic|n.|논쟁, 반론|a strong verbal attack|He wrote a *polemic* against the law.",
+"stipulate|v.|규정하다|to state as a requirement|The contract *stipulates* weekly payment.",
+"broach|v.|말을 꺼내다|to raise a subject|He *broached* the topic of money.",
+"pariah|n.|따돌림받는 사람|an outcast|He became a *pariah* after the scandal.",
+"diffident|adj.|자신 없는|shy and lacking confidence|The *diffident* boy rarely spoke.",
+"fervid|adj.|열렬한|intensely passionate|He gave a *fervid* speech.",
+"myriad|adj.|무수한|countless|The sky held *myriad* stars.",
+"ingenuous|adj.|순진한|innocent and trusting|Her *ingenuous* question made us smile.",
+"fluster|v.|당황하게 하다|to make nervous|The question *flustered* her.",
+"oblique|adj.|간접적인, 비스듬한|indirect; slanted|She made an *oblique* reference to the problem.",
+"ambulatory|adj.|걸을 수 있는|able to walk|The patient is now *ambulatory*.",
+"malleable|adj.|잘 변하는, 유연한|easily shaped|Clay is *malleable*.",
+"excoriate|v.|혹평하다|to criticize harshly|The critic *excoriated* the film.",
+"eradicate|v.|근절하다|to destroy completely|Vaccines helped *eradicate* smallpox.",
+"ardor|n.|열정|great enthusiasm|They worked with *ardor*.",
+"unassuming|adj.|겸손한|modest|Despite her fame, she's *unassuming*.",
+"potent|adj.|강력한|powerful|This is a *potent* medicine.",
+"decimate|v.|대량으로 죽이다|to destroy a large part of|Disease *decimated* the population.",
+"gravity|n.|심각성; 중력|seriousness|He didn't grasp the *gravity* of the situation.",
+"didactic|adj.|교훈적인|meant to teach|The story was too *didactic*.",
+"confound|v.|당황하게 하다|to confuse|The puzzle *confounded* experts.",
+"maudlin|adj.|감상적인|overly sentimental|The movie was *maudlin*.",
+"sanctimonious|adj.|독실한 체하는|acting morally superior|His *sanctimonious* lecture annoyed us.",
+"demur|v.|이의를 제기하다|to object politely|He *demurred* at the suggestion.",
+"prescient|adj.|선견지명이 있는|knowing the future|Her warning proved *prescient*.",
+"recant|v.|철회하다|to take back a statement|He *recanted* his testimony.",
+"profligate|adj.|방탕한, 낭비하는|recklessly wasteful|The *profligate* king emptied the treasury.",
+"rapport|n.|친밀한 관계|a close understanding|The teacher has good *rapport* with students.",
+"exemplary|adj.|모범적인|serving as a good example|She has *exemplary* manners.",
+"judicious|adj.|현명한|showing good judgment|Make *judicious* use of your time.",
+"authoritarian|adj.|권위주의적인|demanding strict obedience|The country had an *authoritarian* ruler.",
+"philistine|n.|교양 없는 사람|one who dislikes art and culture|Only a *philistine* would call this art trash.",
+"denigrate|v.|폄하하다|to criticize unfairly|Don't *denigrate* other people's work.",
+"embargo|n.|통상 금지|an official ban on trade|The country placed an *embargo* on oil.",
+"tenuous|adj.|빈약한|very weak|The connection is *tenuous*.",
+"façade|n.|겉모습, 정면|a false front|Her smile was a *façade*.",
+"doctrine|n.|교리, 원칙|a set of beliefs|The party follows a strict *doctrine*.",
+"introspective|adj.|자기 성찰적인|examining one's own thoughts|He's quiet and *introspective*.",
+"feral|adj.|야생의|wild|*Feral* cats live behind the store.",
+"magnanimous|adj.|관대한|generous and forgiving|She was *magnanimous* in victory.",
+"trenchant|adj.|날카로운, 통렬한|sharp and clear|He made a *trenchant* comment.",
+"aversion|n.|혐오|strong dislike|She has an *aversion* to spiders.",
+"deify|v.|신격화하다|to treat like a god|Fans *deified* the singer.",
+"timorous|adj.|겁 많은|fearful|The *timorous* mouse hid.",
+"equitable|adj.|공정한|fair|We want an *equitable* solution.",
+"histrionic|adj.|과장된, 연극조의|overly dramatic|Her *histrionic* reaction surprised us.",
+"repartee|n.|재치 있는 응수|quick witty conversation|The show is known for its clever *repartee*.",
+"opprobrium|n.|맹비난, 오명|public disgrace|The decision drew *opprobrium*.",
+"beleaguered|adj.|곤경에 처한|troubled; under attack|The *beleaguered* coach faced criticism.",
+"empathy|n.|공감|understanding others' feelings|She showed *empathy* for the new student.",
+"germane|adj.|적절한, 관련된|relevant|That fact isn't *germane* to the case.",
+"laconic|adj.|말수가 적은, 간결한|using very few words|The *laconic* coach answered with a single nod.",
+"belittle|v.|얕보다|to make seem unimportant|Don't *belittle* her achievements.",
+"hedonist|n.|쾌락주의자|one who lives for pleasure|The *hedonist* spent his money on parties.",
+"devious|adj.|교활한|sneaky|He had a *devious* plan.",
+"myopic|adj.|근시안적인|shortsighted|It was a *myopic* decision.",
+"distend|v.|부풀다|to swell|His stomach *distended* after the feast.",
+"entreat|v.|간청하다|to beg|She *entreated* him to stay.",
+"abound|v.|풍부하다|to exist in large numbers|Fish *abound* in this lake.",
+"apex|n.|정점|the highest point|She reached the *apex* of her career.",
+"obstreperous|adj.|소란스러운|noisy and unruly|The *obstreperous* kids were sent out.",
+"fathom|v.|헤아리다|to understand deeply|I can't *fathom* why he did that.",
+"venal|adj.|돈에 매수되는|open to bribery|The *venal* official took bribes.",
+"rife|adj.|만연한|widespread|The town was *rife* with rumors.",
+"stigma|n.|낙인, 오명|a mark of shame|There is a *stigma* around asking for help.",
+"rotund|adj.|둥근, 통통한|round and plump|The *rotund* chef laughed loudly."
+]}
+];
+const WORDS = {};
+STAGES.forEach(s=>{ s.words = s.data.map(line=>{
+  const [w,pos,ko,en,ex] = line.split("|");
+  const id = s.id+":"+w;
+  const form = (ex.match(/\*(.+?)\*/)||[,w])[1];
+  const o = {id,w,pos,ko,en,ex,form,stage:s.id};
+  WORDS[id]=o; return o; }); });
+
+const PETS = {
+  common:["🐶","🐱","🐰","🐸","🐥","🐹","🐷","🐮","🐔","🐢"],
+  rare:["🦊","🐼","🐨","🐧","🦉","🐙","🦦","🐳"],
+  epic:["🦄","🐲","🦖","🦁","🐯"],
+};
+const COLORS = ["#ff6b3d","#3d8bff","#3ccf6e","#8b5cf6","#ff4fa3","#ffd23f"];
+const INT = [0,1,3,7,14,30];   // review interval (days) by box
+const EGG = 100;
+
+/* ===================== STATE ===================== */
+const KEY = "wordquest_v1";
+let mem = null;
+function load(){
+  try{ const t = localStorage.getItem(KEY); if(t) return JSON.parse(t);}catch(e){}
+  return mem || {
+    profiles:{
+      a:{name:"막내", grade:"6학년", color:"#ff6b3d", stage:"e", daily:5, coins:0, xp:0, words:{}, pets:[], days:{}},
+      b:{name:"셋째", grade:"10학년", color:"#3d8bff", stage:"h", daily:10, coins:0, xp:0, words:{}, pets:[], days:{}}
+    },
+    reward:"오늘 미션 완료하면 게임 30분! 🎮",
+    active:null
+  };
+}
+let S = load();
+function save(){ mem = S; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+const P = ()=>S.profiles[S.active];
+function today(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
+function streak(p){
+  let t=today(), n=0;
+  if(!p.days[t]) t--;
+  while(p.days[t]){ n++; t--; }
+  return n;
+}
+const level = p=> Math.floor(p.xp/200)+1;
+const isBoss = r => r && r.wrong>=2 && r.box<3;
+const esc = s=> String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle = a=>{ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const pick = a=> a[Math.floor(Math.random()*a.length)];
+const $ = id=>document.getElementById(id);
+const exHTML = w=> esc(w.ex).replace(/\*(.+?)\*/, '<span class="hl">$1</span>');
+const exBlank = w=> esc(w.ex).replace(/\*(.+?)\*/, '<span class="blank">?</span>');
+
+/* sound + speech (fail quietly if the browser refuses) */
+let AC=null;
+function beep(ok){
+  try{ AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(), g=AC.createGain(); o.connect(g); g.connect(AC.destination);
+    o.type="square"; o.frequency.value = ok?880:180; g.gain.value=.06;
+    o.start(); if(ok){ o.frequency.setValueAtTime(1320, AC.currentTime+.08); }
+    o.stop(AC.currentTime + (ok?.18:.25));
+  }catch(e){}
+}
+const canSay = "speechSynthesis" in window;
+function say(t){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang="en-US"; u.rate=.85; speechSynthesis.speak(u);}catch(e){} }
+const sayBtn = t=> canSay ? `<button class="say" onclick="say('${esc(t).replace(/&#39;/g,"\\'")}')">🔊</button>` : "";
+
+function ava(color, big){ return `<div class="ava ${big?'big':''}"><div class="head"></div><div class="body" style="background:${color}"></div><div class="legs"></div></div>`; }
+
+/* ===================== SCREENS ===================== */
+const app = $("app");
+function render(html){ app.innerHTML = html; window.scrollTo(0,0); }
+
+function screenProfiles(){
+  S.active=null; save();
+  const cards = Object.entries(S.profiles).map(([k,p])=>`
+    <button class="card prof" style="width:100%" onclick="choose('${k}')">
+      ${ava(p.color)}
+      <div class="grow">${esc(p.name)} <small>${esc(p.grade)} · Lv.${level(p)} · 🔥${streak(p)}일 · 🪙${p.coins}</small></div>
+      <div style="font-size:28px">▶</div>
+    </button>`).join("");
+  render(`
+    <h1>⛏️ Word Quest</h1>
+    <p class="sub">단어 퀘스트 · 누가 플레이할까요?</p>
+    ${cards}
+    <button class="btn white small" onclick="screenSettings()">⚙️ 이름 · 보상 설정 (부모님용)</button>
+    <p class="note" style="text-align:center;margin-top:14px">진행 기록은 이 기기의 브라우저에 저장돼요.</p>`);
+}
+function choose(k){ S.active=k; save(); screenHome(); }
+
+function stageStats(p, s){
+  let learned=0, master=0;
+  s.words.forEach(w=>{ const r=p.words[w.id]; if(r){ learned++; if(r.box>=4) master++; } });
+  return {learned, master, total:s.words.length};
+}
+function dueList(p){
+  const t=today();
+  return Object.entries(p.words).filter(([id,r])=>WORDS[id] && r.due<=t)
+    .sort((a,b)=> (isBoss(b[1])-isBoss(a[1])) || (a[1].box-b[1].box)).map(x=>x[0]);
+}
+
+function screenHome(){
+  const p=P(); const lv=level(p); const xpIn=p.xp%200;
+  const due=dueList(p).length;
+  const doneToday=!!p.days[today()];
+  const stages = STAGES.map(s=>{ const st=stageStats(p,s); return `
+    <button class="stage ${p.stage===s.id?'on':''}" onclick="setStage('${s.id}')">
+      ${s.icon} ${s.name}<small>${s.sub}</small>
+      <div class="bar"><i style="width:${Math.round(st.learned/st.total*100)}%"></i></div>
+      <small style="margin:4px 0 0">배움 ${st.learned}/${st.total} · 마스터 ${st.master}</small>
+    </button>`;}).join("");
+  const pets = p.pets.length ? p.pets.map((e,i)=>`<button class="pet" onclick="petTalk(this)">${e}</button>`).join("")
+    : `<div class="empty">아직 펫이 없어요.<br>코인을 모아 알을 뽑아보세요! 🥚</div>`;
+  render(`
+    <div class="top">
+      <button class="back" onclick="screenProfiles()">◀</button>
+      <span class="pill">Lv.${lv}</span><span class="pill">🪙 ${p.coins}</span><span class="pill">🔥 ${streak(p)}일</span>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:12px">
+      ${ava(p.color)}
+      <div class="grow">
+        <div style="font-size:24px">${esc(p.name)}</div>
+        <div class="bar" style="margin:6px 0 2px"><i style="width:${xpIn/2}%;background:var(--blue)"></i></div>
+        <div class="note">다음 레벨까지 ${200-xpIn} XP</div>
+      </div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:22px">${doneToday?'✅ 오늘 미션 완료!':'🗡️ 오늘의 미션'}</div>
+      <div class="note" style="margin:4px 0 12px">새 단어 ${p.daily||5}개 · 복습할 단어 ${due}개 ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 보스 등장!':''} </div>
+      <button class="btn green" onclick="startMission()">${doneToday?'한 판 더 하기':'미션 시작 ▶'}</button>
+      <div class="note" style="margin-top:8px">${esc(S.reward)}</div>
+    </div>
+    <h3 style="margin:16px 4px 6px">🏝️ ${esc(p.name)}의 단어 섬</h3>
+    <div class="island">${pets}</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn purple small" onclick="screenShop()">🥚 알 뽑기</button>
+      <button class="btn blue small" onclick="screenBook()">📖 단어장</button>
+    </div>
+    <h3 style="margin:18px 4px 6px">🗺️ 스테이지</h3>
+    <div class="stages">${stages}</div>`);
+}
+function setStage(id){ P().stage=id; save(); screenHome(); }
+
+function petTalk(el){
+  document.querySelectorAll(".bubble").forEach(b=>b.remove());
+  const p=P(); const known=Object.keys(p.words).filter(id=>WORDS[id]);
+  const b=document.createElement("div"); b.className="bubble";
+  if(known.length){ const w=WORDS[pick(known)]; b.innerHTML=`나 <b class="en">${esc(w.w)}</b> 알아! = ${esc(w.ko)}`; }
+  else b.textContent="단어 가르쳐줘! 📚";
+  el.appendChild(b); setTimeout(()=>b.remove(),2600);
+}
+
+/* ---------- Mission ---------- */
+let M=null;
+function startMission(){
+  const p=P();
+  const daily = p.daily||5;
+  const reviews = dueList(p).slice(0, Math.max(6, daily+2));
+  const stage = STAGES.find(s=>s.id===p.stage);
+  const fresh = stage.words.filter(w=>!p.words[w.id]).map(w=>w.id);
+  const nNew = Math.min(fresh.length, daily);
+  const news = fresh.slice(0,nNew);
+  if(!reviews.length && !news.length){
+    render(`<div class="card" style="text-align:center"><div class="big">🏆</div>
+      <div style="font-size:22px">이 스테이지 단어를 다 배웠어요!</div>
+      <p class="note">오늘 복습할 단어도 없어요. 다른 스테이지를 골라보세요.</p>
+      <button class="btn" onclick="screenHome()">홈으로</button></div>`); return;
+  }
+  const qs=[];
+  news.forEach(id=>{ qs.push({id,t:"mean"}); qs.push({id,t:"fill"}); });
+  reviews.forEach(id=>{ const r=p.words[id]; qs.push({id, t: r.box>=3 ? "spell" : (r.box>=2? pick(["fill","spell"]) : pick(["mean","fill"]))}); });
+  M={news, reviews, all:[...news,...reviews], learnI:0, q:shuffle(qs), qi:0, ok:{}, retried:{}, coins:0, combo:0, right:0, total:0};
+  M.all.forEach(id=>M.ok[id]=true);
+  if(news.length) screenLearn(); else screenQuiz();
+}
+
+function quitBtn(){ return `<button class="back" onclick="if(window.__q){screenHome()}else{window.__q=1;this.textContent='한번 더 누르면 나가기';setTimeout(()=>window.__q=0,2000)}">✕</button>`; }
+
+function screenLearn(){
+  const w=WORDS[M.news[M.learnI]];
+  render(`
+    <div class="qtop">${quitBtn()}<span class="tag new">NEW 새 단어 ${M.learnI+1}/${M.news.length}</span></div>
+    <div class="card">
+      <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
+      <div class="pos en">${esc(w.pos)}</div>
+      <div class="ko">${esc(w.ko)}</div>
+      <div class="def en">${esc(w.en)}</div>
+      <div class="ex en">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
+    </div>
+    <button class="btn green" onclick="nextLearn()">${M.learnI<M.news.length-1?'다음 단어 ▶':'퀴즈 시작! ⚔️'}</button>`);
+  if(canSay) setTimeout(()=>say(w.w),300);
+}
+function nextLearn(){ M.learnI++; if(M.learnI<M.news.length) screenLearn(); else screenQuiz(); }
+
+function distractors(w, field, n=3){
+  const pool = STAGES.find(s=>s.id===w.stage).words.filter(x=>x.id!==w.id && x[field]!==w[field]);
+  return shuffle(pool).slice(0,n);
+}
+
+function screenQuiz(){
+  if(M.qi>=M.q.length) return screenBonus();
+  const q=M.q[M.qi], w=WORDS[q.id], r=P().words[q.id];
+  const boss = isBoss(r);
+  const tag = boss? `<span class="tag boss">👾 BOSS 단어 · 코인 2배</span>` : (M.news.includes(q.id)? `<span class="tag new">NEW</span>`:`<span class="tag">🔁 복습</span>`);
+  const prog = `<div class="bar grow"><i style="width:${M.qi/M.q.length*100}%;background:var(--orange)"></i></div>`;
+  let body="";
+  if(q.t==="mean"){
+    const opts = shuffle([w, ...distractors(w,"ko")]);
+    body = `<div class="note" style="text-align:center">이 단어의 뜻은?</div>
+      <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
+      <div class="ex en" style="font-size:18px">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
+      <div class="opts">${opts.map(o=>`<button class="opt" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(o.ko)}</button>`).join("")}</div>`;
+  } else if(q.t==="fill"){
+    const opts = shuffle([w, ...distractors(w,"w")]);
+    body = `<div class="note" style="text-align:center">빈칸에 알맞은 단어는? <small>(기본형으로 보여요)</small></div>
+      <div class="ex en">${exBlank(w)}</div>
+      <div class="opts">${opts.map(o=>`<button class="opt en" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(o.w)}</button>`).join("")}</div>`;
+  } else {
+    body = `<div class="note" style="text-align:center">뜻을 보고 영어 단어를 직접 써보세요!</div>
+      <div class="ko">${esc(w.ko)}</div>
+      <div class="ex en">${exBlank(w)}</div>
+      <div class="note" style="margin-top:8px">힌트: <b class="en">${esc(w.w[0])}${"_ ".repeat(w.w.length-1)}</b> (${w.w.length}글자)</div>
+      <form onsubmit="event.preventDefault();spellCheck()"><input id="sp" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type here">
+      <button class="btn blue" style="margin-top:10px">확인</button></form>`;
+  }
+  render(`<div class="qtop">${quitBtn()}${prog}<span class="pill">🪙 +${M.coins}</span></div>
+    <div style="margin:6px 2px">${tag}</div>
+    <div class="card" id="qc">${body}<div id="fb"></div></div>`);
+  if(q.t==="spell") setTimeout(()=>{ const i=$("sp"); i&&i.focus(); },100);
+}
+
+function answer(btn){
+  const ok = btn.dataset.ok==="true";
+  document.querySelectorAll(".opt").forEach(b=>{ b.disabled=true; if(b.dataset.ok==="true") b.classList.add("right"); });
+  if(!ok) btn.classList.add("wrong");
+  resolveQ(ok);
+}
+function spellCheck(){
+  const q=M.q[M.qi], w=WORDS[q.id]; const v=($("sp").value||"").trim().toLowerCase();
+  if(!v) return;
+  const ok = v===w.w.toLowerCase() || v===w.form.toLowerCase();
+  $("sp").disabled=true; document.querySelector("#qc form button").disabled=true;
+  resolveQ(ok);
+}
+function resolveQ(ok){
+  const q=M.q[M.qi], w=WORDS[q.id], r=P().words[q.id];
+  M.total++; beep(ok);
+  let msg;
+  if(ok){
+    M.right++; M.combo++;
+    let c = 10 * (isBoss(r)?2:1);
+    if(M.combo>0 && M.combo%3===0){ c+=10; flash(`🔥 ${M.combo} COMBO! +10`); }
+    M.coins+=c; msg=`<div class="fb ok">⭕ 정답! +${c} 🪙<div class="en" style="margin-top:6px">${exHTML(w)}</div></div>`;
+  } else {
+    M.combo=0;
+    if(!M.retried[q.id+q.t]){ M.retried[q.id+q.t]=1; M.q.push({...q}); }
+    M.ok[q.id]=false;
+    msg=`<div class="fb no">❌ 정답은 <b class="en">${esc(w.w)}</b> = ${esc(w.ko)}<div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">이 문제는 조금 뒤에 다시 나와요!</div></div>`;
+  }
+  $("fb").innerHTML = msg + `<button class="btn ${ok?'green':''}" style="margin-top:12px" onclick="M.qi++;screenQuiz()">다음 ▶</button>`;
+  $("fb").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function flash(t){ const d=document.createElement("div"); d.className="combo"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1000); }
+
+function screenBonus(){
+  const w = WORDS[pick(M.all)];
+  M.bonus=w.id;
+  render(`<div class="qtop">${quitBtn()}<span class="tag new">⭐ 보너스 스테이지 +30 🪙</span></div>
+    <div class="card">
+      <div class="note" style="text-align:center">이 단어로 나만의 문장을 만들어 보세요!</div>
+      <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
+      <div class="ko" style="font-size:22px">${esc(w.ko)}</div>
+      <div class="note">예시: <span class="en">${exHTML(w)}</span></div>
+      <textarea id="mine" class="en" placeholder="My sentence..."></textarea>
+      <div id="fb"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn white small" onclick="finish()">건너뛰기</button>
+        <button class="btn green small" onclick="checkMine()">제출</button>
+      </div>
+    </div>`);
+}
+function checkMine(){
+  const w=WORDS[M.bonus]; const t=($("mine").value||"").trim();
+  const stem = w.w.toLowerCase().slice(0, Math.max(4, w.w.length-2));
+  const words = t.split(/\s+/).filter(Boolean).length;
+  if(!t.toLowerCase().includes(stem)){ $("fb").innerHTML=`<div class="fb no">문장에 <b class="en">${esc(w.w)}</b>가 들어가야 해요!</div>`; return; }
+  if(words<5){ $("fb").innerHTML=`<div class="fb no">조금만 더 길게! (단어 5개 이상)</div>`; return; }
+  M.coins+=30; M.mine=t; beep(true); flash("⭐ +30");
+  setTimeout(finish,700);
+}
+
+function finish(){
+  const p=P(), t=today();
+  M.all.forEach(id=>{
+    const r = p.words[id] || {box:0, wrong:0};
+    if(M.ok[id]) r.box=Math.min(5, r.box+1); else { r.box=1; r.wrong=(r.wrong||0)+1; }
+    r.due = t + INT[r.box]; p.words[id]=r;
+  });
+  const firstToday = !p.days[t];
+  if(firstToday) M.coins+=20;
+  const before=level(p);
+  p.coins+=M.coins; p.xp+=M.coins; p.days[t]=true; save();
+  const up = level(p)>before;
+  const now=new Date();
+  render(`
+    <div class="card" style="text-align:center">
+      <div class="big">${M.right===M.total?'🏆':'🎉'}</div>
+      <div style="font-size:26px">미션 클리어!</div>
+      <p style="font-size:20px">정답 ${M.right}/${M.total} · 🪙 +${M.coins} ${firstToday?'(오늘 첫 미션 +20 포함)':''}</p>
+      ${up?`<p style="font-size:22px;color:var(--purple)">⬆️ 레벨 업! Lv.${level(p)}</p>`:''}
+      <p class="note">🔥 연속 ${streak(p)}일째</p>
+      ${M.mine?`<div class="ex en" style="text-align:left">✍️ ${esc(M.mine)}</div>`:''}
+    </div>
+    <div class="stamp">✅ ${esc(p.name)} 오늘 미션 완료<br><span class="note" style="color:var(--ink)">${now.getMonth()+1}/${now.getDate()} ${now.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'})}</span><br>${esc(S.reward)}</div>
+    <div class="row" style="margin-top:18px">
+      <button class="btn purple small" onclick="screenShop()">🥚 알 뽑기</button>
+      <button class="btn green small" onclick="screenHome()">홈으로</button>
+    </div>`);
+}
+
+/* ---------- Shop ---------- */
+function screenShop(res){
+  const p=P();
+  render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><span class="pill">🪙 ${p.coins}</span></div>
+    <div class="card" style="text-align:center">
+      <div class="big" id="egg">${res||'🥚'}</div>
+      <div style="font-size:20px" id="eggmsg">${res?'새 친구가 섬에 왔어요!':'알을 깨면 펫이 나와요'}</div>
+      <p class="note">일반 70% · 레어 25% · 에픽 5%</p>
+      <button class="btn purple" ${p.coins<EGG?'disabled':''} onclick="hatch()">🥚 알 뽑기 (${EGG} 🪙)</button>
+      ${p.coins<EGG?`<p class="note">코인 ${EGG-p.coins}개 더 필요해요. 미션을 깨보세요!</p>`:''}
+    </div>
+    <div class="card"><div style="margin-bottom:8px">내 펫 (${p.pets.length})</div>
+      <div class="shopgrid">${p.pets.map(e=>`<div>${e}</div>`).join("")||'<span class="note" style="grid-column:1/-1">아직 없어요</span>'}</div></div>`);
+}
+function hatch(){
+  const p=P(); if(p.coins<EGG) return;
+  p.coins-=EGG; const r=Math.random();
+  const tier = r<.05?"epic":r<.30?"rare":"common";
+  const e=pick(PETS[tier]); p.pets.push(e); save(); beep(true);
+  const egg=$("egg"); egg.style.transition="transform .5s"; egg.style.transform="rotate(20deg) scale(1.2)";
+  setTimeout(()=>{ screenShop(e); if(tier!=="common") flash(tier==="epic"?"✨ EPIC! ✨":"💎 RARE!"); },550);
+}
+
+/* ---------- Word book ---------- */
+function screenBook(sid){
+  const p=P(); sid=sid||p.stage; const s=STAGES.find(x=>x.id===sid);
+  const tabs=STAGES.map(x=>`<button class="pill" style="${x.id===sid?'background:var(--yellow)':''}" onclick="screenBook('${x.id}')">${x.icon} ${x.name}</button>`).join(" ");
+  const q=(window.__bq||"").toLowerCase();
+  const list=s.words.slice().sort((a,b)=>a.w.localeCompare(b.w)).filter(w=>!q||w.w.includes(q)||w.ko.includes(q));
+  const rows=list.map(w=>{ const r=p.words[w.id];
+    const st = !r?'⬜':isBoss(r)?'👾':r.box>=4?'⭐':'🟩';
+    return `<div class="it">${st}<b>${esc(w.w)}</b><span>${esc(w.ko)}</span>${sayBtn(w.w)}</div>`;}).join("");
+  render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><b style="font-size:20px">📖 단어장</b></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">${tabs}</div>
+    <input type="text" id="bq" class="en" placeholder="🔍 단어 또는 뜻 검색" value="${esc(window.__bq||"")}" oninput="window.__bq=this.value;clearTimeout(window.__bt);window.__bt=setTimeout(()=>{screenBook('${sid}');const i=$('bq');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)">
+    <p class="note">${s.name} ${s.words.length}개 중 ${list.length}개 · ⬜ 아직 안 배움 · 🟩 배우는 중 · ⭐ 마스터 · 👾 자주 틀린 보스 단어</p>
+    <div class="card list en">${rows}</div>`);
+}
+
+/* ---------- Settings ---------- */
+function screenSettings(){
+  const prof = Object.entries(S.profiles).map(([k,p])=>`
+    <div class="card">
+      <label>이름 <input type="text" id="n_${k}" value="${esc(p.name)}"></label>
+      <label>학년 <input type="text" id="g_${k}" value="${esc(p.grade)}"></label>
+      <label>하루 새 단어 수</label>
+      <div class="colors">${[3,5,8,10,15].map(n=>`<button style="width:auto;padding:0 10px;background:${(p.daily||5)===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="S.profiles['${k}'].daily=${n};save();screenSettings()">${n}개</button>`).join("")}</div>
+      <label>캐릭터 색</label>
+      <div class="colors">${COLORS.map(c=>`<button style="background:${c}" class="${p.color===c?'on':''}" onclick="S.profiles['${k}'].color='${c}';save();screenSettings()"></button>`).join("")}</div>
+      <button class="btn white small" style="margin-top:12px" onclick="askReset('${k}')">🗑️ ${esc(p.name)} 기록 초기화</button>
+    </div>`).join("");
+  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ 저장</button><b style="font-size:20px">⚙️ 부모님 설정</b></div>
+    ${prof}
+    <div class="card"><label>미션 완료 보상 문구 <input type="text" id="rw" value="${esc(S.reward)}"></label>
+    <p class="note">미션을 끝내면 이 문구가 완료 도장과 함께 나와요. 아이가 화면을 보여주면 확인해 주세요.</p></div>
+    <div id="modal"></div>`);
+}
+function saveSettings(){
+  Object.keys(S.profiles).forEach(k=>{ S.profiles[k].name=$("n_"+k).value.trim()||S.profiles[k].name; S.profiles[k].grade=$("g_"+k).value.trim(); });
+  S.reward=$("rw").value.trim()||S.reward; save(); screenProfiles();
+}
+function askReset(k){
+  $("modal").innerHTML=`<div class="modal"><div class="card" style="text-align:center">
+    <div style="font-size:20px">${esc(S.profiles[k].name)}의 단어·코인·펫 기록을 모두 지울까요?</div>
+    <div class="row" style="margin-top:14px"><button class="btn white small" onclick="$('modal').innerHTML=''">취소</button>
+    <button class="btn small" style="background:var(--red);color:#fff" onclick="doReset('${k}')">지우기</button></div></div></div>`;
+}
+function doReset(k){ const p=S.profiles[k]; Object.assign(p,{coins:0,xp:0,words:{},pets:[],days:{}}); save(); screenSettings(); }
+
+/* start */
+if(S.active && S.profiles[S.active]) screenHome(); else screenProfiles();
+</script>
+</body>
+</html>
