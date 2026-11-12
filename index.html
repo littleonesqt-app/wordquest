@@ -2288,6 +2288,27 @@ function screenLearn(){
 }
 function nextLearn(){ M.learnI++; if(M.learnI<M.news.length) screenLearn(); else screenQuiz(); }
 
+// what kind of change the word has in its example: base, s, ed (past / past participle), ing
+function infl(x){
+  const f=x.form.toLowerCase(), b=x.w.toLowerCase();
+  if(f===b) return "base";
+  if(f.endsWith("ing") && !b.endsWith("ing")) return "ing";
+  if((f.endsWith("s") && !b.endsWith("s")) || f===b+"es") return "s";
+  return "ed";
+}
+const posKey = x=> x.pos.replace(/[^a-z]/g,"").slice(0,3);
+// wrong choices that are changed the same way as the answer (taken from their own example sentences)
+function formDistractors(w, n=3){
+  const k=infl(w), pk=posKey(w);
+  const same = x=> x.id!==w.id && infl(x)===k && posKey(x)===pk && x.form.toLowerCase()!==w.form.toLowerCase();
+  let pool = STAGES.find(s=>s.id===w.stage).words.filter(same);
+  if(pool.length<n) pool = pool.concat(Object.values(WORDS).filter(x=>same(x) && x.stage!==w.stage));
+  return shuffle(pool).slice(0,n);
+}
+function formText(x, cap){
+  const f=x.form.toLowerCase();
+  return cap ? f[0].toUpperCase()+f.slice(1) : f;
+}
 function distractors(w, field, n=3){
   const pool = STAGES.find(s=>s.id===w.stage).words.filter(x=>x.id!==w.id && x[field]!==w[field]);
   return shuffle(pool).slice(0,n);
@@ -2307,16 +2328,17 @@ function screenQuiz(){
       <div class="ex en" style="font-size:18px">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
       <div class="opts">${opts.map(o=>`<button class="opt" data-ok="${o.id===w.id}" onclick="answer(this)"><span class="en">${esc(o.en)}</span><span class="mk">${esc(o.ko)}</span></button>`).join("")}</div>`;
   } else if(q.t==="fill"){
-    const opts = shuffle([w, ...distractors(w,"w")]);
-    body = `<div class="note" style="text-align:center">Which word fits the blank? <small>(base form)</small></div>
+    const opts = shuffle([w, ...formDistractors(w)]);
+    const cap = /^[A-Z]/.test(w.form);
+    body = `<div class="note" style="text-align:center">Which word fits the blank?</div>
       <div class="ex en">${exBlank(w)}</div>
-      <div class="opts">${opts.map(o=>`<button class="opt en" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(o.w)}</button>`).join("")}</div>`;
+      <div class="opts">${opts.map(o=>`<button class="opt en" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(formText(o,cap))}</button>`).join("")}</div>`;
   } else {
-    body = `<div class="note" style="text-align:center">Read the meaning and type the word!</div>
+    body = `<div class="note" style="text-align:center">Type the word in the right form for the sentence!</div>
       <div class="mean-en">${esc(w.en)}</div>
       <div class="mean-ko">${esc(w.ko)}</div>
       <div class="ex en">${exBlank(w)}</div>
-      <div class="note" style="margin-top:8px">Hint: <b class="en">${esc(w.w[0])}${"_ ".repeat(w.w.length-1)}</b> (${w.w.length} letters)</div>
+      <div class="note" style="margin-top:8px">Hint: <b class="en">${esc(w.form[0].toLowerCase())}${"_ ".repeat(w.form.length-1)}</b> (${w.form.length} letters${infl(w)!=="base"?` · base form: ${esc(w.w[0])}…`:""})</div>
       <form onsubmit="event.preventDefault();spellCheck()"><input id="sp" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type here">
       <button class="btn blue" style="margin-top:10px">Check</button></form>`;
   }
@@ -2352,7 +2374,7 @@ function resolveQ(ok){
     M.combo=0;
     if(!M.retried[q.id+q.t]){ M.retried[q.id+q.t]=1; M.q.push({...q}); }
     M.ok[q.id]=false;
-    msg=`<div class="fb no">❌ The answer is <b class="en">${esc(w.w)}</b> = <span class="en">${esc(w.en)}</span> <span class="note">(${esc(w.ko)})</span><div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">You'll see this one again soon!</div></div>`;
+    msg=`<div class="fb no">❌ The answer is <b class="en">${esc(w.form.toLowerCase())}</b>${infl(w)!=="base"?` <span class="note en">(${esc(w.w)})</span>`:""} = <span class="en">${esc(w.en)}</span> <span class="note">(${esc(w.ko)})</span><div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">You'll see this one again soon!</div></div>`;
   }
   $("fb").innerHTML = msg + `<button class="btn ${ok?'green':''}" style="margin-top:12px" onclick="M.qi++;screenQuiz()">Next ▶</button>`;
   $("fb").scrollIntoView({behavior:"smooth",block:"nearest"});
