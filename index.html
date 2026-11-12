@@ -74,6 +74,9 @@ h1{font-size:34px;margin:6px 0 2px;text-align:center;text-shadow:0 3px 0 #fff}
 .blank{display:inline-block;min-width:80px;border-bottom:4px solid var(--line);text-align:center;color:var(--blue)}
 .opts{display:grid;gap:10px;margin-top:14px}
 .opt{background:#fff;border:3px solid var(--line);border-radius:14px;padding:13px;font-size:21px;box-shadow:0 4px 0 var(--line);text-align:center}
+.opt .mk{display:block;font-size:14px;opacity:.7;margin-top:3px;font-family:"Jua",sans-serif}
+.mean-en{text-align:center;font-family:"Fredoka",sans-serif;font-size:24px;margin:10px 0 2px}
+.mean-ko{text-align:center;color:var(--muted);font-size:16px}
 .opt.right{background:var(--green);color:#fff}
 .opt.wrong{background:var(--red);color:#fff}
 .say{background:var(--blue);color:#fff;border:3px solid var(--line);border-radius:12px;padding:4px 10px;font-size:18px;box-shadow:0 3px 0 var(--line);margin-left:6px;vertical-align:middle}
@@ -2274,8 +2277,8 @@ function screenLearn(){
     <div class="card">
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
       <div class="pos en">${esc(w.pos)}</div>
-      <div class="ko">${esc(w.ko)}</div>
-      <div class="def en">${esc(w.en)}</div>
+      <div class="mean-en">${esc(w.en)}</div>
+      <div class="mean-ko">${esc(w.ko)}</div>
       <div class="ex en">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
     </div>
     <button class="btn green" onclick="nextLearn()">${M.learnI<M.news.length-1?'다음 단어 ▶':'퀴즈 시작! ⚔️'}</button>`);
@@ -2296,19 +2299,20 @@ function screenQuiz(){
   const prog = `<div class="bar grow"><i style="width:${M.qi/M.q.length*100}%;background:var(--orange)"></i></div>`;
   let body="";
   if(q.t==="mean"){
-    const opts = shuffle([w, ...distractors(w,"ko")]);
-    body = `<div class="note" style="text-align:center">이 단어의 뜻은?</div>
+    const opts = shuffle([w, ...distractors(w,"en")]);
+    body = `<div class="note" style="text-align:center">What does it mean? (이 단어의 뜻은?)</div>
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
       <div class="ex en" style="font-size:18px">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
-      <div class="opts">${opts.map(o=>`<button class="opt" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(o.ko)}</button>`).join("")}</div>`;
+      <div class="opts">${opts.map(o=>`<button class="opt" data-ok="${o.id===w.id}" onclick="answer(this)"><span class="en">${esc(o.en)}</span><span class="mk">${esc(o.ko)}</span></button>`).join("")}</div>`;
   } else if(q.t==="fill"){
     const opts = shuffle([w, ...distractors(w,"w")]);
     body = `<div class="note" style="text-align:center">빈칸에 알맞은 단어는? <small>(기본형으로 보여요)</small></div>
       <div class="ex en">${exBlank(w)}</div>
       <div class="opts">${opts.map(o=>`<button class="opt en" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(o.w)}</button>`).join("")}</div>`;
   } else {
-    body = `<div class="note" style="text-align:center">뜻을 보고 영어 단어를 직접 써보세요!</div>
-      <div class="ko">${esc(w.ko)}</div>
+    body = `<div class="note" style="text-align:center">Read the meaning and type the word! (뜻을 보고 단어를 써보세요)</div>
+      <div class="mean-en">${esc(w.en)}</div>
+      <div class="mean-ko">${esc(w.ko)}</div>
       <div class="ex en">${exBlank(w)}</div>
       <div class="note" style="margin-top:8px">힌트: <b class="en">${esc(w.w[0])}${"_ ".repeat(w.w.length-1)}</b> (${w.w.length}글자)</div>
       <form onsubmit="event.preventDefault();spellCheck()"><input id="sp" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type here">
@@ -2346,7 +2350,7 @@ function resolveQ(ok){
     M.combo=0;
     if(!M.retried[q.id+q.t]){ M.retried[q.id+q.t]=1; M.q.push({...q}); }
     M.ok[q.id]=false;
-    msg=`<div class="fb no">❌ 정답은 <b class="en">${esc(w.w)}</b> = ${esc(w.ko)}<div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">이 문제는 조금 뒤에 다시 나와요!</div></div>`;
+    msg=`<div class="fb no">❌ 정답은 <b class="en">${esc(w.w)}</b> = <span class="en">${esc(w.en)}</span> <span class="note">(${esc(w.ko)})</span><div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">이 문제는 조금 뒤에 다시 나와요!</div></div>`;
   }
   $("fb").innerHTML = msg + `<button class="btn ${ok?'green':''}" style="margin-top:12px" onclick="M.qi++;screenQuiz()">다음 ▶</button>`;
   $("fb").scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -2360,7 +2364,8 @@ function screenBonus(){
     <div class="card">
       <div class="note" style="text-align:center">이 단어로 나만의 문장을 만들어 보세요!</div>
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
-      <div class="ko" style="font-size:22px">${esc(w.ko)}</div>
+      <div class="mean-en">${esc(w.en)}</div>
+      <div class="mean-ko">${esc(w.ko)}</div>
       <div class="note">예시: <span class="en">${exHTML(w)}</span></div>
       <textarea id="mine" class="en" placeholder="My sentence..."></textarea>
       <div id="fb"></div>
