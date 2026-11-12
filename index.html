@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Word Quest 단어 퀘스트</title>
+<title>Word Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -111,7 +111,7 @@ label{display:block;margin-top:10px;font-size:16px}
 /* ===================== WORD DATA =====================
    word | part of speech | 한국어 뜻 | English meaning | example (*marked* form)  */
 const STAGES = [
- {id:"e", name:"초등 복습", sub:"Grade 4–6", icon:"🌱", data:[
+ {id:"e", name:"Elementary", sub:"Grade 4–6 review", icon:"🌱", data:[
 "ignore|v.|무시하다|to pay no attention to|*Ignore* the noise and focus.",
 "brief|adj.|짧은, 잠깐의|lasting a short time|The server had a *brief* shutdown, so we only waited five minutes.",
 "recognize|v.|알아보다|to know from before|I *recognized* her voice right away.",
@@ -422,7 +422,7 @@ const STAGES = [
 "boast|v.|자랑하다|to talk too proudly about yourself|He *boasted* about his rare pet all day.",
 "release|v.|풀어주다, 공개하다|to let go; to make available|The game will be *released* in May."
 ]},
- {id:"m", name:"중학교", sub:"Middle School", icon:"🔥", data:[
+ {id:"m", name:"Middle School", sub:"Grade 6–8", icon:"🔥", data:[
 "complement|v.|보완하다|to go well with|The sauce *complements* the chicken.",
 "accelerate|v.|가속하다|to speed up|The car *accelerated* down the hill.",
 "individual|n.|개인|a single person|Each *individual* has a vote.",
@@ -753,7 +753,7 @@ const STAGES = [
 "tedious|adj.|지루한|boring and long|Copying the words was *tedious*.",
 "thorough|adj.|철저한|complete and careful|Do a *thorough* search of the room."
 ]},
- {id:"h", name:"고등학교", sub:"High School", icon:"⚡", data:[
+ {id:"h", name:"High School", sub:"Grade 9–12", icon:"⚡", data:[
 "nostalgia|n.|향수|longing for the past|Old songs fill me with *nostalgia*.",
 "versatile|adj.|다재다능한|able to do many different things|A *versatile* player can play any position.",
 "hinder|v.|방해하다|to make something harder to do|Lag can *hinder* your performance in a race.",
@@ -1065,7 +1065,7 @@ const STAGES = [
 "susceptible|adj.|~에 취약한|easily affected|Kids are *susceptible* to colds.",
 "fervent|adj.|열렬한|very passionate|She is a *fervent* supporter of the team."
 ]},
- {id:"s", name:"SAT", sub:"SAT Advanced", icon:"👑", data:[
+ {id:"s", name:"SAT", sub:"SAT advanced", icon:"👑", data:[
 "invective|n.|독설|harsh insulting language|He hurled *invective* at the referee.",
 "capitulate|v.|항복하다|to give in|The army *capitulated* after a long siege.",
 "jubilant|adj.|환희에 찬|joyful|The *jubilant* fans celebrated.",
@@ -2119,14 +2119,16 @@ function load(){
   try{ const t = localStorage.getItem(KEY); if(t) return JSON.parse(t);}catch(e){}
   return mem || {
     profiles:{
-      a:{name:"막내", grade:"6학년", color:"#ff6b3d", stage:"e", daily:5, coins:0, xp:0, words:{}, pets:[], days:{}},
-      b:{name:"셋째", grade:"10학년", color:"#3d8bff", stage:"h", daily:10, coins:0, xp:0, words:{}, pets:[], days:{}}
+      a:{name:"막내", grade:"6th grade", color:"#ff6b3d", stage:"e", daily:5, coins:0, xp:0, words:{}, pets:[], days:{}},
+      b:{name:"셋째", grade:"10th grade", color:"#3d8bff", stage:"h", daily:10, coins:0, xp:0, words:{}, pets:[], days:{}}
     },
-    reward:"오늘 미션 완료하면 게임 30분! 🎮",
+    reward:"Finish today's mission = 30 min of game time! 🎮",
     active:null
   };
 }
 let S = load();
+if(S.reward==="오늘 미션 완료하면 게임 30분! 🎮") S.reward="Finish today's mission = 30 min of game time! 🎮";
+Object.values(S.profiles).forEach(p=>{ if(p.grade==="6학년")p.grade="6th grade"; if(p.grade==="10학년")p.grade="10th grade"; });
 function save(){ mem = S; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 const P = ()=>S.profiles[S.active];
 function today(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
@@ -2170,15 +2172,15 @@ function screenProfiles(){
   const cards = Object.entries(S.profiles).map(([k,p])=>`
     <button class="card prof" style="width:100%" onclick="choose('${k}')">
       ${ava(p.color)}
-      <div class="grow">${esc(p.name)} <small>${esc(p.grade)} · Lv.${level(p)} · 🔥${streak(p)}일 · 🪙${p.coins}</small></div>
+      <div class="grow">${esc(p.name)} <small>${esc(p.grade)} · Lv.${level(p)} · 🔥${streak(p)} days · 🪙${p.coins}</small></div>
       <div style="font-size:28px">▶</div>
     </button>`).join("");
   render(`
     <h1>⛏️ Word Quest</h1>
-    <p class="sub">단어 퀘스트 · 누가 플레이할까요?</p>
+    <p class="sub">Who's playing today?</p>
     ${cards}
-    <button class="btn white small" onclick="screenSettings()">⚙️ 이름 · 보상 설정 (부모님용)</button>
-    <p class="note" style="text-align:center;margin-top:14px">진행 기록은 이 기기의 브라우저에 저장돼요.</p>`);
+    <button class="btn white small" onclick="screenSettings()">⚙️ Parent settings</button>
+    <p class="note" style="text-align:center;margin-top:14px">Progress is saved on this device.</p>`);
 }
 function choose(k){ S.active=k; save(); screenHome(); }
 
@@ -2201,36 +2203,36 @@ function screenHome(){
     <button class="stage ${p.stage===s.id?'on':''}" onclick="setStage('${s.id}')">
       ${s.icon} ${s.name}<small>${s.sub}</small>
       <div class="bar"><i style="width:${Math.round(st.learned/st.total*100)}%"></i></div>
-      <small style="margin:4px 0 0">배움 ${st.learned}/${st.total} · 마스터 ${st.master}</small>
+      <small style="margin:4px 0 0">Learned ${st.learned}/${st.total} · ⭐ ${st.master}</small>
     </button>`;}).join("");
   const pets = p.pets.length ? p.pets.map((e,i)=>`<button class="pet" onclick="petTalk(this)">${e}</button>`).join("")
-    : `<div class="empty">아직 펫이 없어요.<br>코인을 모아 알을 뽑아보세요! 🥚</div>`;
+    : `<div class="empty">No pets yet.<br>Collect coins and hatch an egg! 🥚</div>`;
   render(`
     <div class="top">
       <button class="back" onclick="screenProfiles()">◀</button>
-      <span class="pill">Lv.${lv}</span><span class="pill">🪙 ${p.coins}</span><span class="pill">🔥 ${streak(p)}일</span>
+      <span class="pill">Lv.${lv}</span><span class="pill">🪙 ${p.coins}</span><span class="pill">🔥 ${streak(p)} days</span>
     </div>
     <div class="card" style="display:flex;align-items:center;gap:12px">
       ${ava(p.color)}
       <div class="grow">
         <div style="font-size:24px">${esc(p.name)}</div>
         <div class="bar" style="margin:6px 0 2px"><i style="width:${xpIn/2}%;background:var(--blue)"></i></div>
-        <div class="note">다음 레벨까지 ${200-xpIn} XP</div>
+        <div class="note">${200-xpIn} XP to next level</div>
       </div>
     </div>
     <div class="card" style="text-align:center">
-      <div style="font-size:22px">${doneToday?'✅ 오늘 미션 완료!':'🗡️ 오늘의 미션'}</div>
-      <div class="note" style="margin:4px 0 12px">새 단어 ${p.daily||5}개 · 복습할 단어 ${due}개 ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 보스 등장!':''} </div>
-      <button class="btn green" onclick="startMission()">${doneToday?'한 판 더 하기':'미션 시작 ▶'}</button>
+      <div style="font-size:22px">${doneToday?'✅ Mission complete!':'🗡️ Today\'s Mission'}</div>
+      <div class="note" style="margin:4px 0 12px">${p.daily||5} new words · ${due} to review ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 Boss alert!':''} </div>
+      <button class="btn green" onclick="startMission()">${doneToday?'Play again ▶':'Start mission ▶'}</button>
       <div class="note" style="margin-top:8px">${esc(S.reward)}</div>
     </div>
-    <h3 style="margin:16px 4px 6px">🏝️ ${esc(p.name)}의 단어 섬</h3>
+    <h3 style="margin:16px 4px 6px">🏝️ ${esc(p.name)}'s Word Island</h3>
     <div class="island">${pets}</div>
     <div class="row" style="margin-top:14px">
-      <button class="btn purple small" onclick="screenShop()">🥚 알 뽑기</button>
-      <button class="btn blue small" onclick="screenBook()">📖 단어장</button>
+      <button class="btn purple small" onclick="screenShop()">🥚 Hatch</button>
+      <button class="btn blue small" onclick="screenBook()">📖 Word Book</button>
     </div>
-    <h3 style="margin:18px 4px 6px">🗺️ 스테이지</h3>
+    <h3 style="margin:18px 4px 6px">🗺️ Stages</h3>
     <div class="stages">${stages}</div>`);
 }
 function setStage(id){ P().stage=id; save(); screenHome(); }
@@ -2239,8 +2241,8 @@ function petTalk(el){
   document.querySelectorAll(".bubble").forEach(b=>b.remove());
   const p=P(); const known=Object.keys(p.words).filter(id=>WORDS[id]);
   const b=document.createElement("div"); b.className="bubble";
-  if(known.length){ const w=WORDS[pick(known)]; b.innerHTML=`나 <b class="en">${esc(w.w)}</b> 알아! = ${esc(w.ko)}`; }
-  else b.textContent="단어 가르쳐줘! 📚";
+  if(known.length){ const w=WORDS[pick(known)]; b.innerHTML=`I know <b class="en">${esc(w.w)}</b>! 😄`; }
+  else b.textContent="Teach me a word! 📚";
   el.appendChild(b); setTimeout(()=>b.remove(),2600);
 }
 
@@ -2256,9 +2258,9 @@ function startMission(){
   const news = fresh.slice(0,nNew);
   if(!reviews.length && !news.length){
     render(`<div class="card" style="text-align:center"><div class="big">🏆</div>
-      <div style="font-size:22px">이 스테이지 단어를 다 배웠어요!</div>
-      <p class="note">오늘 복습할 단어도 없어요. 다른 스테이지를 골라보세요.</p>
-      <button class="btn" onclick="screenHome()">홈으로</button></div>`); return;
+      <div style="font-size:22px">You learned every word in this stage!</div>
+      <p class="note">No reviews today. Pick another stage!</p>
+      <button class="btn" onclick="screenHome()">Home</button></div>`); return;
   }
   const qs=[];
   news.forEach(id=>{ qs.push({id,t:"mean"}); qs.push({id,t:"fill"}); });
@@ -2268,12 +2270,12 @@ function startMission(){
   if(news.length) screenLearn(); else screenQuiz();
 }
 
-function quitBtn(){ return `<button class="back" onclick="if(window.__q){screenHome()}else{window.__q=1;this.textContent='한번 더 누르면 나가기';setTimeout(()=>window.__q=0,2000)}">✕</button>`; }
+function quitBtn(){ return `<button class="back" onclick="if(window.__q){screenHome()}else{window.__q=1;this.textContent='Tap again to quit';setTimeout(()=>window.__q=0,2000)}">✕</button>`; }
 
 function screenLearn(){
   const w=WORDS[M.news[M.learnI]];
   render(`
-    <div class="qtop">${quitBtn()}<span class="tag new">NEW 새 단어 ${M.learnI+1}/${M.news.length}</span></div>
+    <div class="qtop">${quitBtn()}<span class="tag new">NEW WORD ${M.learnI+1}/${M.news.length}</span></div>
     <div class="card">
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
       <div class="pos en">${esc(w.pos)}</div>
@@ -2281,7 +2283,7 @@ function screenLearn(){
       <div class="mean-ko">${esc(w.ko)}</div>
       <div class="ex en">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
     </div>
-    <button class="btn green" onclick="nextLearn()">${M.learnI<M.news.length-1?'다음 단어 ▶':'퀴즈 시작! ⚔️'}</button>`);
+    <button class="btn green" onclick="nextLearn()">${M.learnI<M.news.length-1?'Next word ▶':'Start quiz! ⚔️'}</button>`);
   if(canSay) setTimeout(()=>say(w.w),300);
 }
 function nextLearn(){ M.learnI++; if(M.learnI<M.news.length) screenLearn(); else screenQuiz(); }
@@ -2295,28 +2297,28 @@ function screenQuiz(){
   if(M.qi>=M.q.length) return screenBonus();
   const q=M.q[M.qi], w=WORDS[q.id], r=P().words[q.id];
   const boss = isBoss(r);
-  const tag = boss? `<span class="tag boss">👾 BOSS 단어 · 코인 2배</span>` : (M.news.includes(q.id)? `<span class="tag new">NEW</span>`:`<span class="tag">🔁 복습</span>`);
+  const tag = boss? `<span class="tag boss">👾 BOSS WORD · 2x coins</span>` : (M.news.includes(q.id)? `<span class="tag new">NEW</span>`:`<span class="tag">🔁 Review</span>`);
   const prog = `<div class="bar grow"><i style="width:${M.qi/M.q.length*100}%;background:var(--orange)"></i></div>`;
   let body="";
   if(q.t==="mean"){
     const opts = shuffle([w, ...distractors(w,"en")]);
-    body = `<div class="note" style="text-align:center">What does it mean? (이 단어의 뜻은?)</div>
+    body = `<div class="note" style="text-align:center">What does it mean?</div>
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
       <div class="ex en" style="font-size:18px">${exHTML(w)} ${sayBtn(w.ex.replace(/\*/g,""))}</div>
       <div class="opts">${opts.map(o=>`<button class="opt" data-ok="${o.id===w.id}" onclick="answer(this)"><span class="en">${esc(o.en)}</span><span class="mk">${esc(o.ko)}</span></button>`).join("")}</div>`;
   } else if(q.t==="fill"){
     const opts = shuffle([w, ...distractors(w,"w")]);
-    body = `<div class="note" style="text-align:center">빈칸에 알맞은 단어는? <small>(기본형으로 보여요)</small></div>
+    body = `<div class="note" style="text-align:center">Which word fits the blank? <small>(base form)</small></div>
       <div class="ex en">${exBlank(w)}</div>
       <div class="opts">${opts.map(o=>`<button class="opt en" data-ok="${o.id===w.id}" onclick="answer(this)">${esc(o.w)}</button>`).join("")}</div>`;
   } else {
-    body = `<div class="note" style="text-align:center">Read the meaning and type the word! (뜻을 보고 단어를 써보세요)</div>
+    body = `<div class="note" style="text-align:center">Read the meaning and type the word!</div>
       <div class="mean-en">${esc(w.en)}</div>
       <div class="mean-ko">${esc(w.ko)}</div>
       <div class="ex en">${exBlank(w)}</div>
-      <div class="note" style="margin-top:8px">힌트: <b class="en">${esc(w.w[0])}${"_ ".repeat(w.w.length-1)}</b> (${w.w.length}글자)</div>
+      <div class="note" style="margin-top:8px">Hint: <b class="en">${esc(w.w[0])}${"_ ".repeat(w.w.length-1)}</b> (${w.w.length} letters)</div>
       <form onsubmit="event.preventDefault();spellCheck()"><input id="sp" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type here">
-      <button class="btn blue" style="margin-top:10px">확인</button></form>`;
+      <button class="btn blue" style="margin-top:10px">Check</button></form>`;
   }
   render(`<div class="qtop">${quitBtn()}${prog}<span class="pill">🪙 +${M.coins}</span></div>
     <div style="margin:6px 2px">${tag}</div>
@@ -2345,14 +2347,14 @@ function resolveQ(ok){
     M.right++; M.combo++;
     let c = 10 * (isBoss(r)?2:1);
     if(M.combo>0 && M.combo%3===0){ c+=10; flash(`🔥 ${M.combo} COMBO! +10`); }
-    M.coins+=c; msg=`<div class="fb ok">⭕ 정답! +${c} 🪙<div class="en" style="margin-top:6px">${exHTML(w)}</div></div>`;
+    M.coins+=c; msg=`<div class="fb ok">⭕ Correct! +${c} 🪙<div class="en" style="margin-top:6px">${exHTML(w)}</div></div>`;
   } else {
     M.combo=0;
     if(!M.retried[q.id+q.t]){ M.retried[q.id+q.t]=1; M.q.push({...q}); }
     M.ok[q.id]=false;
-    msg=`<div class="fb no">❌ 정답은 <b class="en">${esc(w.w)}</b> = <span class="en">${esc(w.en)}</span> <span class="note">(${esc(w.ko)})</span><div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">이 문제는 조금 뒤에 다시 나와요!</div></div>`;
+    msg=`<div class="fb no">❌ The answer is <b class="en">${esc(w.w)}</b> = <span class="en">${esc(w.en)}</span> <span class="note">(${esc(w.ko)})</span><div class="en" style="margin-top:6px">${exHTML(w)}</div><div class="note">You'll see this one again soon!</div></div>`;
   }
-  $("fb").innerHTML = msg + `<button class="btn ${ok?'green':''}" style="margin-top:12px" onclick="M.qi++;screenQuiz()">다음 ▶</button>`;
+  $("fb").innerHTML = msg + `<button class="btn ${ok?'green':''}" style="margin-top:12px" onclick="M.qi++;screenQuiz()">Next ▶</button>`;
   $("fb").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function flash(t){ const d=document.createElement("div"); d.className="combo"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1000); }
@@ -2360,18 +2362,18 @@ function flash(t){ const d=document.createElement("div"); d.className="combo"; d
 function screenBonus(){
   const w = WORDS[pick(M.all)]; M.bonusTry=0;
   M.bonus=w.id;
-  render(`<div class="qtop">${quitBtn()}<span class="tag new">⭐ 보너스 스테이지 · 최대 +40 🪙</span></div>
+  render(`<div class="qtop">${quitBtn()}<span class="tag new">⭐ BONUS STAGE · up to +40 🪙</span></div>
     <div class="card">
-      <div class="note" style="text-align:center">이 단어로 나만의 문장을 만들어 보세요!</div>
+      <div class="note" style="text-align:center">Write your own sentence with this word!</div>
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
       <div class="mean-en">${esc(w.en)}</div>
       <div class="mean-ko">${esc(w.ko)}</div>
-      <div class="note">예시: <span class="en">${exHTML(w)}</span></div>
+      <div class="note">Example: <span class="en">${exHTML(w)}</span></div>
       <textarea id="mine" class="en" placeholder="My sentence..."></textarea>
       <div id="fb"></div>
       <div class="row" style="margin-top:10px">
-        <button class="btn white small" onclick="finish()">건너뛰기</button>
-        <button class="btn green small" onclick="checkMine()">제출</button>
+        <button class="btn white small" onclick="finish()">Skip</button>
+        <button class="btn green small" onclick="checkMine()">Submit</button>
       </div>
     </div>`);
 }
@@ -2402,28 +2404,28 @@ async function checkMine(){
   const w=WORDS[M.bonus]; let t=($("mine").value||"").trim();
   const stem = w.w.toLowerCase().slice(0, Math.max(4, w.w.length-2));
   const words = t.split(/\s+/).filter(Boolean).length;
-  if(!t.toLowerCase().includes(stem)){ $("fb").innerHTML=`<div class="fb no">Use the word <b class="en">${esc(w.w)}</b> in your sentence! (단어가 들어가야 해요)</div>`; return; }
-  if(words<5){ $("fb").innerHTML=`<div class="fb no">A little longer, please! (단어 5개 이상)</div>`; return; }
-  checking=true; $("fb").innerHTML=`<div class="fb">🔎 Checking grammar... (문법 검사 중)</div>`;
+  if(!t.toLowerCase().includes(stem)){ $("fb").innerHTML=`<div class="fb no">Use the word <b class="en">${esc(w.w)}</b> in your sentence!</div>`; return; }
+  if(words<5){ $("fb").innerHTML=`<div class="fb no">A little longer, please! (5+ words)</div>`; return; }
+  checking=true; $("fb").innerHTML=`<div class="fb">🔎 Checking grammar...</div>`;
   let ms=null;
   try{ ms = await grammarCheck(t); }catch(e){ ms=null; }
   checking=false;
   if(ms===null){
-    $("fb").innerHTML=`<div class="fb">⚠️ 지금은 문법 검사를 할 수 없어요 (인터넷 연결 확인). 보너스는 그대로 받아요!</div>`;
+    $("fb").innerHTML=`<div class="fb">⚠️ Grammar check isn't available right now. You still get the bonus!</div>`;
     return bonusDone(t,30,false);
   }
-  if(!ms.length){ $("fb").innerHTML=`<div class="fb ok">✅ Perfect grammar! 완벽해요!</div>`; return bonusDone(t, M.bonusTry?30:40, true); }
+  if(!ms.length){ $("fb").innerHTML=`<div class="fb ok">✅ Perfect grammar!</div>`; return bonusDone(t, M.bonusTry?30:40, true); }
   const fixed = applyFixes(t, ms);
   M.bonusTry=(M.bonusTry||0)+1;
   $("fb").innerHTML=`<div class="fb no">
-      <div>✏️ Let's fix it! (이렇게 고쳐 볼까요?)</div>
+      <div>✏️ Let's fix it!</div>
       <div class="en" style="margin-top:8px">${markErrors(t,ms)}</div>
       <div class="en" style="margin-top:8px;background:#d8f8e2;border-radius:10px;padding:8px">👉 ${esc(fixed)}</div>
       <ul class="note en" style="margin:8px 0 0;padding-left:20px">${ms.slice(0,4).map(m=>`<li>${esc(m.message)}</li>`).join("")}</ul>
-      <div class="note" style="margin-top:6px">고친 문장을 직접 다시 써서 제출하면 +30, 그냥 넘어가면 +20</div>
+      <div class="note" style="margin-top:6px">Rewrite it yourself and submit for +30, or finish now for +20.</div>
       <div class="row" style="margin-top:10px">
-        <button class="btn white small" onclick="bonusDone(${JSON.stringify(fixed).replace(/"/g,'&quot;')},20,false)">이대로 완료 +20</button>
-        <button class="btn blue small" onclick="$('mine').focus()">다시 쓰기 ✍️</button>
+        <button class="btn white small" onclick="bonusDone(${JSON.stringify(fixed).replace(/"/g,'&quot;')},20,false)">Finish +20</button>
+        <button class="btn blue small" onclick="$('mine').focus()">Rewrite ✍️</button>
       </div></div>`;
 }
 function bonusDone(t, c, perfect){
@@ -2447,16 +2449,16 @@ function finish(){
   render(`
     <div class="card" style="text-align:center">
       <div class="big">${M.right===M.total?'🏆':'🎉'}</div>
-      <div style="font-size:26px">미션 클리어!</div>
-      <p style="font-size:20px">정답 ${M.right}/${M.total} · 🪙 +${M.coins} ${firstToday?'(오늘 첫 미션 +20 포함)':''}</p>
-      ${up?`<p style="font-size:22px;color:var(--purple)">⬆️ 레벨 업! Lv.${level(p)}</p>`:''}
-      <p class="note">🔥 연속 ${streak(p)}일째</p>
+      <div style="font-size:26px">Mission Clear!</div>
+      <p style="font-size:20px">Correct ${M.right}/${M.total} · 🪙 +${M.coins} ${firstToday?'(includes +20 daily bonus)':''}</p>
+      ${up?`<p style="font-size:22px;color:var(--purple)">⬆️ LEVEL UP! Lv.${level(p)}</p>`:''}
+      <p class="note">🔥 ${streak(p)}-day streak</p>
       ${M.mine?`<div class="ex en" style="text-align:left">✍️ ${esc(M.mine)}</div>`:''}
     </div>
-    <div class="stamp">✅ ${esc(p.name)} 오늘 미션 완료<br><span class="note" style="color:var(--ink)">${now.getMonth()+1}/${now.getDate()} ${now.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'})}</span><br>${esc(S.reward)}</div>
+    <div class="stamp">✅ ${esc(p.name)} finished today's mission<br><span class="note" style="color:var(--ink)">${now.getMonth()+1}/${now.getDate()} ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span><br>${esc(S.reward)}</div>
     <div class="row" style="margin-top:18px">
-      <button class="btn purple small" onclick="screenShop()">🥚 알 뽑기</button>
-      <button class="btn green small" onclick="screenHome()">홈으로</button>
+      <button class="btn purple small" onclick="screenShop()">🥚 Hatch</button>
+      <button class="btn green small" onclick="screenHome()">Home</button>
     </div>`);
 }
 
@@ -2466,13 +2468,13 @@ function screenShop(res){
   render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><span class="pill">🪙 ${p.coins}</span></div>
     <div class="card" style="text-align:center">
       <div class="big" id="egg">${res||'🥚'}</div>
-      <div style="font-size:20px" id="eggmsg">${res?'새 친구가 섬에 왔어요!':'알을 깨면 펫이 나와요'}</div>
-      <p class="note">일반 70% · 레어 25% · 에픽 5%</p>
-      <button class="btn purple" ${p.coins<EGG?'disabled':''} onclick="hatch()">🥚 알 뽑기 (${EGG} 🪙)</button>
-      ${p.coins<EGG?`<p class="note">코인 ${EGG-p.coins}개 더 필요해요. 미션을 깨보세요!</p>`:''}
+      <div style="font-size:20px" id="eggmsg">${res?'A new friend joined your island!':'Hatch an egg to get a pet'}</div>
+      <p class="note">Common 70% · Rare 25% · Epic 5%</p>
+      <button class="btn purple" ${p.coins<EGG?'disabled':''} onclick="hatch()">🥚 Hatch (${EGG} 🪙)</button>
+      ${p.coins<EGG?`<p class="note">You need ${EGG-p.coins} more coins. Clear a mission!</p>`:''}
     </div>
-    <div class="card"><div style="margin-bottom:8px">내 펫 (${p.pets.length})</div>
-      <div class="shopgrid">${p.pets.map(e=>`<div>${e}</div>`).join("")||'<span class="note" style="grid-column:1/-1">아직 없어요</span>'}</div></div>`);
+    <div class="card"><div style="margin-bottom:8px">My pets (${p.pets.length})</div>
+      <div class="shopgrid">${p.pets.map(e=>`<div>${e}</div>`).join("")||'<span class="note" style="grid-column:1/-1">None yet</span>'}</div></div>`);
 }
 function hatch(){
   const p=P(); if(p.coins<EGG) return;
@@ -2488,14 +2490,14 @@ function screenBook(sid){
   const p=P(); sid=sid||p.stage; const s=STAGES.find(x=>x.id===sid);
   const tabs=STAGES.map(x=>`<button class="pill" style="${x.id===sid?'background:var(--yellow)':''}" onclick="screenBook('${x.id}')">${x.icon} ${x.name}</button>`).join(" ");
   const q=(window.__bq||"").toLowerCase();
-  const list=s.words.slice().sort((a,b)=>a.w.localeCompare(b.w)).filter(w=>!q||w.w.includes(q)||w.ko.includes(q));
+  const list=s.words.slice().sort((a,b)=>a.w.localeCompare(b.w)).filter(w=>!q||w.w.includes(q)||w.ko.includes(q)||w.en.toLowerCase().includes(q));
   const rows=list.map(w=>{ const r=p.words[w.id];
     const st = !r?'⬜':isBoss(r)?'👾':r.box>=4?'⭐':'🟩';
-    return `<div class="it">${st}<b>${esc(w.w)}</b><span>${esc(w.ko)}</span>${sayBtn(w.w)}</div>`;}).join("");
-  render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><b style="font-size:20px">📖 단어장</b></div>
+    return `<div class="it">${st}<b>${esc(w.w)}</b><span>${esc(w.en)}<br><small>${esc(w.ko)}</small></span>${sayBtn(w.w)}</div>`;}).join("");
+  render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><b style="font-size:20px">📖 Word Book</b></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">${tabs}</div>
-    <input type="text" id="bq" class="en" placeholder="🔍 단어 또는 뜻 검색" value="${esc(window.__bq||"")}" oninput="window.__bq=this.value;clearTimeout(window.__bt);window.__bt=setTimeout(()=>{screenBook('${sid}');const i=$('bq');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)">
-    <p class="note">${s.name} ${s.words.length}개 중 ${list.length}개 · ⬜ 아직 안 배움 · 🟩 배우는 중 · ⭐ 마스터 · 👾 자주 틀린 보스 단어</p>
+    <input type="text" id="bq" class="en" placeholder="🔍 Search words or meanings" value="${esc(window.__bq||"")}" oninput="window.__bq=this.value;clearTimeout(window.__bt);window.__bt=setTimeout(()=>{screenBook('${sid}');const i=$('bq');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)">
+    <p class="note">${s.name}: ${list.length} of ${s.words.length} · ⬜ new · 🟩 learning · ⭐ mastered · 👾 boss</p>
     <div class="card list en">${rows}</div>`);
 }
 
@@ -2503,18 +2505,18 @@ function screenBook(sid){
 function screenSettings(){
   const prof = Object.entries(S.profiles).map(([k,p])=>`
     <div class="card">
-      <label>이름 <input type="text" id="n_${k}" value="${esc(p.name)}"></label>
-      <label>학년 <input type="text" id="g_${k}" value="${esc(p.grade)}"></label>
-      <label>하루 새 단어 수</label>
-      <div class="colors">${[3,5,8,10,15].map(n=>`<button style="width:auto;padding:0 10px;background:${(p.daily||5)===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="S.profiles['${k}'].daily=${n};save();screenSettings()">${n}개</button>`).join("")}</div>
-      <label>캐릭터 색</label>
+      <label>Name <input type="text" id="n_${k}" value="${esc(p.name)}"></label>
+      <label>Grade <input type="text" id="g_${k}" value="${esc(p.grade)}"></label>
+      <label>New words per day</label>
+      <div class="colors">${[3,5,8,10,15].map(n=>`<button style="width:auto;padding:0 10px;background:${(p.daily||5)===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="S.profiles['${k}'].daily=${n};save();screenSettings()">${n}</button>`).join("")}</div>
+      <label>Character color</label>
       <div class="colors">${COLORS.map(c=>`<button style="background:${c}" class="${p.color===c?'on':''}" onclick="S.profiles['${k}'].color='${c}';save();screenSettings()"></button>`).join("")}</div>
-      <button class="btn white small" style="margin-top:12px" onclick="askReset('${k}')">🗑️ ${esc(p.name)} 기록 초기화</button>
+      <button class="btn white small" style="margin-top:12px" onclick="askReset('${k}')">🗑️ Reset ${esc(p.name)}'s progress</button>
     </div>`).join("");
-  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ 저장</button><b style="font-size:20px">⚙️ 부모님 설정</b></div>
+  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ Save</button><b style="font-size:20px">⚙️ Parent settings</b></div>
     ${prof}
-    <div class="card"><label>미션 완료 보상 문구 <input type="text" id="rw" value="${esc(S.reward)}"></label>
-    <p class="note">미션을 끝내면 이 문구가 완료 도장과 함께 나와요. 아이가 화면을 보여주면 확인해 주세요.</p></div>
+    <div class="card"><label>Mission reward message <input type="text" id="rw" value="${esc(S.reward)}"></label>
+    <p class="note">Shown with the completion stamp after each mission.</p></div>
     <div id="modal"></div>`);
 }
 function saveSettings(){
@@ -2523,9 +2525,9 @@ function saveSettings(){
 }
 function askReset(k){
   $("modal").innerHTML=`<div class="modal"><div class="card" style="text-align:center">
-    <div style="font-size:20px">${esc(S.profiles[k].name)}의 단어·코인·펫 기록을 모두 지울까요?</div>
-    <div class="row" style="margin-top:14px"><button class="btn white small" onclick="$('modal').innerHTML=''">취소</button>
-    <button class="btn small" style="background:var(--red);color:#fff" onclick="doReset('${k}')">지우기</button></div></div></div>`;
+    <div style="font-size:20px">Delete all words, coins and pets for ${esc(S.profiles[k].name)}?</div>
+    <div class="row" style="margin-top:14px"><button class="btn white small" onclick="$('modal').innerHTML=''">Cancel</button>
+    <button class="btn small" style="background:var(--red);color:#fff" onclick="doReset('${k}')">Delete</button></div></div></div>`;
 }
 function doReset(k){ const p=S.profiles[k]; Object.assign(p,{coins:0,xp:0,words:{},pets:[],days:{}}); save(); screenSettings(); }
 
