@@ -57,7 +57,9 @@ h1{font-size:34px;margin:6px 0 2px;text-align:center;text-shadow:0 3px 0 #fff}
 .stage{background:#fff;border:3px solid var(--line);border-radius:14px;padding:10px;text-align:left;box-shadow:0 4px 0 var(--line);font-size:17px}
 .stage.on{background:#fff6cc;outline:4px solid var(--orange)}
 .stage small{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
-.stage.big{font-size:19px}.stage .gicon{font-size:22px}.stage small.now{color:var(--orange);font-weight:700;margin-top:4px}
+.tag.area{background:#eef3ff;color:#2a4fb0;border-color:#b9c9f2}
+.plink{background:none;border:none;color:var(--muted);font-size:14px;text-decoration:underline;cursor:pointer;margin-top:10px;width:auto}
+.stage.big{font-size:19px}.stage .gicon{font-size:22px}.stage small.now{color:var(--orange);font-weight:700;margin-top:4px}.stage small.mixl{color:#5a6a8a;font-size:12px;margin:2px 0 6px}
 
 .island{position:relative;min-height:150px;background:radial-gradient(ellipse at 50% 80%,#ffe6a3 0 55%,#7fd472 56%);border:3px solid var(--line);border-radius:18px;box-shadow:0 5px 0 var(--line);overflow:visible;padding:16px 8px 26px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .pet{font-size:38px;background:none;animation:bob 2.4s ease-in-out infinite;position:relative;padding:2px}
@@ -101,7 +103,8 @@ textarea{min-height:90px;font-size:19px}
 .big{font-size:56px;text-align:center}
 .list .it{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:2px dashed #d6dbef;font-size:18px}
 .list .it:last-child{border:none}
-.list .it b{font-family:"Fredoka";min-width:120px}
+.list .it b{font-family:"Fredoka";min-width:120px;max-width:42%;overflow-wrap:anywhere}
+.list .it span{flex:1;min-width:0;overflow-wrap:anywhere}.list .it .say{flex:none}
 .list .it span{flex:1;color:var(--muted);font-size:16px}
 .shopgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:30px;text-align:center}
 .note{font-size:15px;color:var(--muted);line-height:1.5}
@@ -2479,7 +2482,7 @@ const PETS = {
 const COLORS = ["#ff6b3d","#3d8bff","#3ccf6e","#8b5cf6","#ff4fa3","#ffd23f"];
 const INT = [0,1,3,7,14,30];   // review interval (days) by box
 const EGG = 1000;
-const APP_VERSION = "11.14 (4 stages · 365 word families)";
+const APP_VERSION = "11.15 (one mixed mission per stage)";
 
 /* ===================== STATE ===================== */
 const KEY = "wordquest_v1";
@@ -2592,10 +2595,10 @@ function screenHome(){
   const due=dueList(p).length;
   const doneToday=!!p.days[today()];
   const stages = GROUPS.map(g=>{ const st=groupStats(p,g); const on=g.stages.includes(p.stage);
-    const cur = on && g.stages.length>1 ? `<small class="now">▶ Now: ${subName(p.stage)}</small>` : "";
+    const cur = on ? `<small class="now">▶ Studying now</small>` : "";
     return `
-    <button class="stage big ${on?'on':''}" onclick="${g.stages.length>1?`screenGroup('${g.id}')`:`setStage('${g.stages[0]}')`}">
-      <span class="gicon">${g.icon}</span> ${g.name}<small>${g.sub}${g.stages.length>1?` · ${g.stages.length} courses ▸`:''}</small>
+    <button class="stage big ${on?'on':''}" onclick="setGroup('${g.id}')">
+      <span class="gicon">${g.icon}</span> ${g.name}<small>${g.sub}</small><small class="mixl">${g.mix}</small>
       <div class="bar"><i style="width:${Math.round(st.learned/st.total*100)}%"></i></div>
       <small style="margin:4px 0 0">Learned ${st.learned}/${st.total} · ⭐ ${st.master}</small>${cur}
     </button>`;}).join("");
@@ -2616,9 +2619,10 @@ function screenHome(){
     </div>
     <div class="card" style="text-align:center">
       <div style="font-size:22px">${doneToday?'✅ Mission complete!':'🗡️ Today\'s Mission'}</div>
-      <div class="note" style="margin:4px 0 0">📍 ${groupOf(p.stage).name}${groupOf(p.stage).stages.length>1?' · '+subName(p.stage):''}</div><div class="note" style="margin:2px 0 12px">${p.daily||5} new words · ${due} to review ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 Boss alert!':''} </div>
+      <div class="note" style="margin:4px 0 0">📍 ${groupOf(p.stage).name} · ${groupOf(p.stage).mix}</div><div class="note" style="margin:2px 0 12px">${p.daily||5} new words · ${due} to review ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 Boss alert!':''} </div>
       <button class="btn green" onclick="startMission()">${doneToday?'Play again ▶':'Start mission ▶'}</button>
       <div class="note" style="margin-top:8px">${esc(S.reward)}</div>
+      ${MIX[groupOf(p.stage).id]?`<button class="plink" onclick="screenPractice('${groupOf(p.stage).id}')">🎯 Practice by type</button>`:''}
     </div>
     <h3 style="margin:16px 4px 6px">🏝️ ${esc(p.name)}'s Word Island</h3>
     <div class="island">${pets}</div>
@@ -2632,10 +2636,10 @@ function screenHome(){
 
 /* ---------- 4 big stages on screen (the 7 internal stage IDs and saved progress are unchanged) ---------- */
 const GROUPS = [
-  {id:"E", name:"Elementary", sub:"Grade 4–6 Review", icon:"🌱", stages:["e"]},
-  {id:"M", name:"Middle School", sub:"Grade 6–8", icon:"🔥", stages:["m","l"]},
-  {id:"H", name:"High School", sub:"Grade 9–12", icon:"⚡", stages:["h"]},
-  {id:"S", name:"SAT Prep", sub:"Advanced Reading & Writing", icon:"👑", stages:["s","c","t"]}
+  {id:"E", name:"Elementary", sub:"Grade 4–6 Review", icon:"🌱", stages:["e"], mix:"Words + word families"},
+  {id:"M", name:"Middle School", sub:"Grade 6–8", icon:"🔥", stages:["m","l"], mix:"Words + linking words, mixed"},
+  {id:"H", name:"High School", sub:"Grade 9–12", icon:"⚡", stages:["h"], mix:"Academic words in context"},
+  {id:"S", name:"SAT Prep", sub:"Advanced Reading & Writing", icon:"👑", stages:["s","c","t"], mix:"Words + context + transitions, mixed"}
 ];
 const SUB = {e:["🌱","Elementary","Grade 4–6 review words"], m:["📚","Vocabulary","Middle school academic words"], l:["🔗","Linking Words","however · therefore · although"],
   h:["⚡","High School","Grade 9–12 words"], s:["📚","SAT Vocabulary","Advanced SAT words"], c:["🎯","Words in Context","“most nearly mean” — words with several meanings"], t:["🧭","SAT Transitions","Logic between sentences"]};
@@ -2644,16 +2648,20 @@ const groupOf = id=> GROUPS.find(g=>g.stages.includes(id));
 function groupStats(p, g){
   return g.stages.map(id=>stageStats(p, STAGES.find(s=>s.id===id))).reduce((a,b)=>({learned:a.learned+b.learned, master:a.master+b.master, total:a.total+b.total}), {learned:0,master:0,total:0});
 }
-function screenGroup(gid){
+function setGroup(gid){ const p=P(), g=GROUPS.find(x=>x.id===gid); if(!g.stages.includes(p.stage)) p.stage=g.stages[0]; save(); screenHome(); }
+// optional: practice one question type only (records still go to the same internal course)
+function screenPractice(gid){
   const p=P(), g=GROUPS.find(x=>x.id===gid);
-  const cards=g.stages.map(id=>{ const s=STAGES.find(x=>x.id===id), st=stageStats(p,s), on=p.stage===id; return `
-    <button class="stage big ${on?'on':''}" style="width:100%;margin-bottom:10px" onclick="setStage('${id}')">
-      <span class="gicon">${SUB[id][0]}</span> ${SUB[id][1]}${on?' <span class="tag new">studying</span>':''}<small>${SUB[id][2]}</small>
+  const cards=g.stages.map(id=>{ const s=STAGES.find(x=>x.id===id), st=stageStats(p,s);
+    const due=dueList(p).filter(x=>WORDS[x].stage===id).length; return `
+    <div class="stage big" style="width:100%;margin-bottom:10px;text-align:left">
+      <span class="gicon">${SUB[id][0]}</span> ${SUB[id][1]}<small>${SUB[id][2]}</small>
       <div class="bar"><i style="width:${Math.round(st.learned/st.total*100)}%"></i></div>
-      <small style="margin:4px 0 0">Learned ${st.learned}/${st.total} · ⭐ ${st.master}</small>
-    </button>`; }).join("");
-  render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><b style="font-size:21px">${g.icon} ${g.name}</b></div>
-    <p class="note" style="margin:6px 4px 12px">${g.sub} · Pick a course. Your progress in every course is saved separately.</p>
+      <small style="margin:4px 0 8px">Learned ${st.learned}/${st.total} · ⭐ ${st.master} · ${due} to review</small>
+      <button class="btn blue small" onclick="startMission('${id}')">Practice ${SUB[id][1]} ▶</button>
+    </div>`; }).join("");
+  render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><b style="font-size:21px">🎯 Practice by type</b></div>
+    <p class="note" style="margin:6px 4px 12px">${g.icon} ${g.name}. Your daily mission already mixes all of these — use this only when you want extra practice on one type. Progress is saved to the same place either way.</p>
     ${cards}`);
 }
 function setStage(id){ P().stage=id; save(); screenHome(); }
@@ -2745,12 +2753,81 @@ function famHTML(w, open){
 
 /* ---------- Mission ---------- */
 let M=null;
-function startMission(){
+/* ---------- integrated missions ----------
+   Middle School = Vocabulary 8 : Linking Words 2,  SAT Prep = Vocabulary 5 : Words in Context 3 : Transitions 2
+   (ratios are for multiple-choice questions; "cost" = multiple-choice questions one new word brings,
+    so a 1-question context word and a 3-question SAT word are balanced fairly) */
+const MIX = { M:[["m",8,2.2],["l",2,2]], S:[["s",5,3],["c",3,1],["t",2,2]] };
+const AREA = {m:"📚 Vocabulary", l:"🔗 Linking Words", s:"📚 SAT Vocabulary", c:"🎯 Words in Context", t:"🧭 SAT Transitions", e:"🌱 Vocabulary", h:"⚡ Vocabulary"};
+function planMix(p, gid, n, reviews){
+  const areas=MIX[gid], raw=areas.map(a=>a[1]/a[2]), sum=raw.reduce((a,b)=>a+b,0);
+  const exact=raw.map(x=>x/sum*n); const k=exact.map(Math.floor);
+  let left=n-k.reduce((a,b)=>a+b,0);
+  exact.map((x,i)=>[x-Math.floor(x),i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{ if(left>0){ k[i]++; left--; } });
+  // every area at least once
+  areas.forEach((a,i)=>{ if(k[i]===0){ const j=k.indexOf(Math.max(...k)); if(k[j]>1){ k[j]--; k[i]=1; } } });
+  const used=new Set(reviews.map(id=>WORDS[id].w)), news=[], extra=[];
+  const take=(sid,cnt)=>{ const st=STAGES.find(s=>s.id===sid); let n=0;
+    for(const id of pickNew(p,st,cnt+8)){ if(n>=cnt) break; const w=WORDS[id].w; if(used.has(w)) continue; used.add(w); news.push(id); n++; }
+    return n; };
+  areas.forEach((a,i)=>{
+    const got=take(a[0],k[i]);
+    if(got>=k[i]) return;
+    // this course has run out of new words: keep its share with words already learned
+    // (due reviews first; then extra practice that does not change the review schedule)
+    let need=Math.round((k[i]-got)*a[2]);   // replace the missing new words' questions one-for-one
+    const known=shuffle(Object.keys(p.words).filter(id=>WORDS[id] && WORDS[id].stage===a[0] && !reviews.includes(id)));
+    for(const id of known){ if(need<=0) break; const w=WORDS[id].w; if(used.has(w)) continue; used.add(w); extra.push(id); need--; }
+    if(need>0) areas.forEach(b=>{ if(b!==a && need>0) need-=take(b[0],need); });   // nothing learned yet either: pass the slots on
+  });
+  // every course appears at least once
+  areas.forEach(a=>{ if(news.concat(reviews,extra).some(id=>WORDS[id].stage===a[0])) return;
+    const known=Object.keys(p.words).filter(id=>WORDS[id] && WORDS[id].stage===a[0] && !used.has(WORDS[id].w));
+    if(known.length){ const id=pick(known); used.add(WORDS[id].w); extra.push(id); } });
+  return {news, extra};
+}
+// review slots are shared out by the same ratio (each review = one question); what is not reached today stays due for the next mission
+function mixReviews(p, gid, R){
+  const areas=MIX[gid], due=dueList(p), w=areas.map(a=>a[1]), sw=w.reduce((a,b)=>a+b,0);
+  const ex=w.map(x=>x/sw*R), k=ex.map(Math.floor); let left=R-k.reduce((a,b)=>a+b,0);
+  ex.map((x,i)=>[x-Math.floor(x),i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{ if(left>0){ k[i]++; left--; } });
+  const out=[];
+  areas.forEach((a,i)=>out.push(...due.filter(id=>WORDS[id].stage===a[0]).slice(0,k[i])));
+  for(const id of due){ if(out.length>=R) break; if(!out.includes(id)) out.push(id); }   // unused slots: any other due word
+  return out;
+}
+// final check for mixed missions: top up any course whose share of multiple-choice questions is below its ratio
+// (questions are only ever added, never removed, so no review is skipped)
+const MCQ = ["mean","fill","syn","nearly","fam"];
+function balanceMix(p, gid, qs, news, reviews, extra){
+  const areas=MIX[gid], sw=areas.reduce((a,b)=>a+b[1],0);
+  const cnt=a=>qs.filter(q=>MCQ.includes(q.t) && WORDS[q.id].stage===a).length;
+  const T=Math.max(...areas.map(a=>cnt(a[0])/(a[1]/sw)));
+  const inMission=new Set(news.concat(reviews,extra)), usedW=new Set([...inMission].map(id=>WORDS[id].w));
+  areas.forEach(a=>{
+    let need=Math.round(T*a[1]/sw)-cnt(a[0]); if(need<=0) return;
+    const types = a[0]==="c" ? ["nearly"] : ["mean","fill"];
+    // 1) another question type for a word already in this mission
+    for(const id of [...inMission].filter(id=>WORDS[id].stage===a[0])){
+      for(const t of types){ if(need<=0) break; if(!qs.some(q=>q.id===id && q.t===t)){ qs.push({id,t}); need--; } }
+      if(need<=0) break;
+    }
+    // 2) learned words from this course as extra practice (their review schedule is not changed)
+    const known=shuffle(Object.keys(p.words).filter(id=>WORDS[id] && WORDS[id].stage===a[0] && !inMission.has(id) && !usedW.has(WORDS[id].w)));
+    for(const id of known){ if(need<=0) break; extra.push(id); reviews.push(id); inMission.add(id); usedW.add(WORDS[id].w); qs.push({id,t:pick(types)}); need--; }
+  });
+}
+function startMission(only){
   const p=P();
   const daily = p.daily||5;
-  const reviews = dueList(p).slice(0, Math.max(6, daily+2));
-  const stage = STAGES.find(s=>s.id===p.stage);
-  const news = pickNew(p, stage, daily);
+  const g = groupOf(p.stage);
+  const mixed = !only && MIX[g.id];
+  let reviews;
+  if(mixed) reviews = mixReviews(p, g.id, Math.max(6, daily+2));
+  else { reviews = dueList(p); if(only) reviews = reviews.filter(id=>WORDS[id].stage===only); reviews = reviews.slice(0, Math.max(6, daily+2)); }
+  let news, extra=[];
+  if(mixed){ const pl=planMix(p, g.id, daily, reviews); news=pl.news; extra=pl.extra; }
+  else news = pickNew(p, STAGES.find(s=>s.id===(only||p.stage)), daily);
   if(!reviews.length && !news.length){
     render(`<div class="card" style="text-align:center"><div class="big">🏆</div>
       <div style="font-size:22px">You learned every word in this stage!</div>
@@ -2771,6 +2848,7 @@ function startMission(){
     if(listenOK(id)) ts.push({id,t:"listen"});
     ts.push({id,t:"type"});
   });
+  reviews = reviews.concat(extra);
   reviews.forEach(id=>{ const r=p.words[id];
     if(isCtx(id)){ qs.push({id,t:"nearly"}); return; }
     const canFam = famItems(WORDS[id]).length && famN<3 && Math.random()<.25;
@@ -2778,17 +2856,19 @@ function startMission(){
     else if(r.box<3) qs.push({id, t: pick(hasSyn(id)?["mean","fill","syn"]:["mean","fill"])});
     else if(hasSyn(id) && Math.random()<.5) qs.push({id,t:"syn"});
     ts.push({id,t:"type"}); });
-  M={news, reviews, all:[...news,...reviews], learnI:0, q:[...shuffle(qs), ...shuffle(ts)], qi:0, ok:{}, retried:{}, coins:0, combo:0, right:0, total:0};
+  if(mixed) balanceMix(p, g.id, qs, news, reviews, extra);
+  M={news, reviews, extra, only:only||null, all:[...news,...reviews], learnI:0, q:[...shuffle(qs), ...shuffle(ts)], qi:0, ok:{}, retried:{}, coins:0, combo:0, right:0, total:0};
   M.all.forEach(id=>M.ok[id]=true);
   if(news.length) screenLearn(); else screenQuiz();
 }
 
+function areaTag(w){ const g=groupOf(w.stage); return (g && g.stages.length>1) ? `<span class="tag area">${AREA[w.stage]}</span>` : ""; }
 function quitBtn(){ return `<button class="back" onclick="if(window.__q){screenHome()}else{window.__q=1;this.textContent='Tap again to quit';setTimeout(()=>window.__q=0,2000)}">✕</button>`; }
 
 function screenLearn(){
   const w=WORDS[M.news[M.learnI]];
   render(`
-    <div class="qtop">${quitBtn()}<span class="tag new">NEW WORD ${M.learnI+1}/${M.news.length}</span></div>
+    <div class="qtop">${quitBtn()}<span class="tag new">NEW WORD ${M.learnI+1}/${M.news.length}</span>${areaTag(w)}</div>
     <div class="card">
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
       <div class="pos en">${esc(w.pos)}</div>
@@ -2912,7 +2992,7 @@ function screenQuiz(){
       <button class="btn blue" style="margin-top:10px">Check</button></form>`;
   }
   render(`<div class="qtop">${quitBtn()}${prog}<span class="pill">🪙 +${M.coins}</span></div>
-    <div style="margin:6px 2px">${tag}</div>
+    <div style="margin:6px 2px">${tag} ${areaTag(w)}</div>
     <div class="card" id="qc">${body}<div id="fb"></div></div>
     <div style="text-align:center"><button class="flag" onclick="flagQ()">🚩 Something wrong with this question?</button><div id="flagbox"></div></div>`);
   if(q.t==="listen") setTimeout(()=>say(w.w),350);
@@ -3084,6 +3164,7 @@ function bonusDone(t, c, perfect){
 function finish(){
   const p=P(), t=today();
   M.all.forEach(id=>{
+    if((M.extra||[]).includes(id)) return;   // extra practice word: its review schedule stays as it was
     const r = p.words[id] || {box:0, wrong:0};
     if(M.ok[id]) r.box=Math.min(5, r.box+1); else { r.box=1; r.wrong=(r.wrong||0)+1; }
     r.due = t + INT[r.box]; p.words[id]=r;
