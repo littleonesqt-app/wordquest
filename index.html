@@ -2358,9 +2358,9 @@ function resolveQ(ok){
 function flash(t){ const d=document.createElement("div"); d.className="combo"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1000); }
 
 function screenBonus(){
-  const w = WORDS[pick(M.all)];
+  const w = WORDS[pick(M.all)]; M.bonusTry=0;
   M.bonus=w.id;
-  render(`<div class="qtop">${quitBtn()}<span class="tag new">⭐ 보너스 스테이지 +30 🪙</span></div>
+  render(`<div class="qtop">${quitBtn()}<span class="tag new">⭐ 보너스 스테이지 · 최대 +40 🪙</span></div>
     <div class="card">
       <div class="note" style="text-align:center">이 단어로 나만의 문장을 만들어 보세요!</div>
       <div class="word en">${esc(w.w)}${sayBtn(w.w)}</div>
@@ -2375,14 +2375,60 @@ function screenBonus(){
       </div>
     </div>`);
 }
-function checkMine(){
-  const w=WORDS[M.bonus]; const t=($("mine").value||"").trim();
+async function grammarCheck(text){
+  // Free public LanguageTool API (no key). Returns list of {offset,length,message,rep}
+  const body = new URLSearchParams({text, language:"en-US"});
+  const ctl = new AbortController(); const tm=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const r = await fetch("https://api.languagetool.org/v2/check",{method:"POST",body,signal:ctl.signal});
+    if(!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    return j.matches.map(m=>({offset:m.offset,length:m.length,message:m.message,rep:(m.replacements[0]||{}).value}));
+  } finally { clearTimeout(tm); }
+}
+function applyFixes(t, ms){
+  let out=t; ms.slice().sort((x,y)=>y.offset-x.offset).forEach(m=>{ if(m.rep!=null) out=out.slice(0,m.offset)+m.rep+out.slice(m.offset+m.length); });
+  return out;
+}
+function markErrors(t, ms){
+  let html="", i=0;
+  ms.slice().sort((x,y)=>x.offset-y.offset).forEach(m=>{ if(m.offset<i) return;
+    html+=esc(t.slice(i,m.offset))+`<span style="background:#ffd0d2;text-decoration:underline wavy var(--red)">${esc(t.substr(m.offset,m.length)||" ")}</span>`; i=m.offset+m.length; });
+  return html+esc(t.slice(i));
+}
+let checking=false;
+async function checkMine(){
+  if(checking) return;
+  const w=WORDS[M.bonus]; let t=($("mine").value||"").trim();
   const stem = w.w.toLowerCase().slice(0, Math.max(4, w.w.length-2));
   const words = t.split(/\s+/).filter(Boolean).length;
-  if(!t.toLowerCase().includes(stem)){ $("fb").innerHTML=`<div class="fb no">문장에 <b class="en">${esc(w.w)}</b>가 들어가야 해요!</div>`; return; }
-  if(words<5){ $("fb").innerHTML=`<div class="fb no">조금만 더 길게! (단어 5개 이상)</div>`; return; }
-  M.coins+=30; M.mine=t; beep(true); flash("⭐ +30");
-  setTimeout(finish,700);
+  if(!t.toLowerCase().includes(stem)){ $("fb").innerHTML=`<div class="fb no">Use the word <b class="en">${esc(w.w)}</b> in your sentence! (단어가 들어가야 해요)</div>`; return; }
+  if(words<5){ $("fb").innerHTML=`<div class="fb no">A little longer, please! (단어 5개 이상)</div>`; return; }
+  checking=true; $("fb").innerHTML=`<div class="fb">🔎 Checking grammar... (문법 검사 중)</div>`;
+  let ms=null;
+  try{ ms = await grammarCheck(t); }catch(e){ ms=null; }
+  checking=false;
+  if(ms===null){
+    $("fb").innerHTML=`<div class="fb">⚠️ 지금은 문법 검사를 할 수 없어요 (인터넷 연결 확인). 보너스는 그대로 받아요!</div>`;
+    return bonusDone(t,30,false);
+  }
+  if(!ms.length){ $("fb").innerHTML=`<div class="fb ok">✅ Perfect grammar! 완벽해요!</div>`; return bonusDone(t, M.bonusTry?30:40, true); }
+  const fixed = applyFixes(t, ms);
+  M.bonusTry=(M.bonusTry||0)+1;
+  $("fb").innerHTML=`<div class="fb no">
+      <div>✏️ Let's fix it! (이렇게 고쳐 볼까요?)</div>
+      <div class="en" style="margin-top:8px">${markErrors(t,ms)}</div>
+      <div class="en" style="margin-top:8px;background:#d8f8e2;border-radius:10px;padding:8px">👉 ${esc(fixed)}</div>
+      <ul class="note en" style="margin:8px 0 0;padding-left:20px">${ms.slice(0,4).map(m=>`<li>${esc(m.message)}</li>`).join("")}</ul>
+      <div class="note" style="margin-top:6px">고친 문장을 직접 다시 써서 제출하면 +30, 그냥 넘어가면 +20</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn white small" onclick="bonusDone(${JSON.stringify(fixed).replace(/"/g,'&quot;')},20,false)">이대로 완료 +20</button>
+        <button class="btn blue small" onclick="$('mine').focus()">다시 쓰기 ✍️</button>
+      </div></div>`;
+}
+function bonusDone(t, c, perfect){
+  M.coins+=c; M.mine=t; beep(true); flash(`${perfect?'🏆':'⭐'} +${c}`);
+  setTimeout(finish,900);
 }
 
 function finish(){
