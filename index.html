@@ -2474,6 +2474,28 @@ STAGES.forEach(s=>{ s.words = s.data.map(line=>{
   const o = {id,w,pos,ko,en,ex,form,qex,qform,dis,tex,tform,syn,sdis,ctype:ctype||"",clue:clue||"",why:why||"",stage:s.id};
   WORDS[id]=o; return o; }); });
 
+/* ---------- curriculum routing (v11.18) ----------
+   Word IDs, saved progress and the 7 internal stages are unchanged; this only decides where a word is offered as a NEW word.
+   SAT words (s:…): HB = taught in High School missions (ID stays s:…), CORE = SAT Prep first, SUP = SAT Prep after Core,
+   ADV = optional practice only, ARC = not offered as a new word any more (word book and earlier reviews keep working).
+   HOLD = words registered in the data but not released to students yet (no card, question, count or word-book entry). */
+const ROUTE = {};
+/* ROUTE_DATA_BEGIN */Object.entries({"HB": "abate abound abrasive abridge absolve abstain accentuate accolade adversary agile agitate allay allure aloof altercation amenity amicable amnesty anguish animate annex annihilate annotate anomalous anomaly antecedent antipathy antiquated apathetic apex appall apprehensive archaic archetype ardent arid askew asylum atone atrophy audacious austere authoritarian avid awry balk bane beleaguered belittle benign beset besiege bestow blatant blight boon bristle broach brusque burgeon cadence callous camaraderie candid candor capitulate caustic caveat censure chronic circuitous circumspect circumvent clamor clandestine cliché coalesce complacent compliant complicit condescending confound conscientious contiguous contingent contrite conviction convoluted copious cordial corroborate cosmopolitan counterintuitive covert cower crass culminate culpable cursory curt debacle debunk decimate defunct deleterious delude deluge demagogue demeanor denigrate derivative destitute devious devoid diligent discerning disconcerting dishearten disingenuous disinterested disparate disseminate distraught divergence divulge doctrine dormant dour duress dwindle earnest eclectic elegy embezzle eminent empathy encroach endemic engender epiphany equitable equivocal eradicate eschew espouse estranged euphemism exacerbate exemplary exonerate exorbitant expedient expound extant extenuating facile fallible fathom fiasco figurative foment forage forgo formidable forthright fortitude fraught frenetic frugal fruition furtive genial germane glean grandiose gratuitous gravity gregarious grievance grievous harrowing haughty heterogeneous homogeneous hone hyperbole idiosyncrasy idiosyncratic illicit illusory immutable impair impasse impeach impeccable impending imperceptible impervious impetus implicate impunity inclement incongruity incumbent indifferent indigenous indignant indulgent inexplicable infringe ingenious innocuous insidious insular intangible intimate intractable introspective inundate irrevocable jargon jubilant judicious juncture kinetic lackluster latitude laud laudable lax legacy lenient lethal liability listless livid lofty lucrative luminous magnate malice malign malleable mandatory mendacious mentor meticulous misnomer modicum monotonous moratorium mundane myriad nascent nefarious nemesis nexus nonchalant notorious nuanced nullify oblivion obstinate onerous orthodox ostensibly ostentatious oust overture palpable paltry paragon paraphrase partiality patronize paucity pensive perennial perilous peripheral permeate pervasive pinnacle plight poignant pompous ponderous potent precarious predecessor preeminent preponderance pretext pristine prognosis propagate protagonist prudent punitive purport quandary quell quintessential ramification rapport ravenous rebuttal recant recompense redress refurbish rejuvenate remorse renovate repercussion replicate reprehensible requisite resignation resilient resolute respite restitution reticent rife rigorous robust salvage satire saturate scant scrupulous sedentary semblance serendipity shirk sinister slander sluggish solace somber sovereign spurious staunch steadfast stigma stipulate stoic strenuous strident stymie subside substantive subversive succumb superficial superfluous surmise surmount sustenance tacit tactile tangential tantamount tenacious tenet tenuous terse thwart toxic tractable transcend transgress transitory travesty treatise trite trivialize turbulent tyranny ubiquitous unequivocal unwarranted unwieldy unwitting urbane utilitarian utopia vacillate vacuous vehement venerable veracity verbatim vestige vicarious vigor vindicate virtuous visceral viscous voracious waive warrant whimsical wield wrath wry zealot zealous zenith", "ADV": "abdicate abet abhor abject abscond accede accretion acerbic acquit adjudicate adorn adulation aegis affable amiss amity arable ascetic augur bellicose bemused bequeath berate bucolic burnish cantankerous charlatan connoisseur craven dauntless defile denizen desecrate diminutive dissemble dissolute distend draconian dupe effusive emaciated enthrall enunciate envoy ersatz eulogy euphoria exalt excoriate extemporaneous exultant fallow fanatic fawn feral fervid flippant forbearance forlorn gambit garrulous gratify grovel gusto idyllic imbibe impudent inane inchoate incognito incorrigible incredulous indefatigable indelible indolent ingenuous insipid insolent inure irksome jocular jovial kindle labyrinth lacerate lambaste lionize lithe mar meander minuscule mirth misanthrope morose motley munificent nomadic nondescript notoriety obtuse occlude odious omnipotent omniscient onus pandemonium pecuniary pedantic penitent petulant pious plaintive plunder prodigy profane profuse propitious propriety prosaic provident pugnacious quixotic rabid raucous relish remiss remunerate renege renown repose revel rotund rue salubrious savor sedition servile slovenly spartan spendthrift squalid stolid stupefy sundry surfeit surly tedium tepid unkempt unruly vagrant vanquish vengeance verdant vex vilify virtuoso", "CORE": "aberration acquiesce acrid acrimony acumen adage adhere admonish adroit affinity aggrieved alacrity amalgam ambivalent ameliorate amenable amorphous anachronism anarchy anathema ancillary antithesis apocryphal apposite apprise arbiter arcane arrogate assail assent assiduous assuage attenuate auspicious avarice aversion avow bastion beguile behemoth belie belligerent benefactor benevolent bereft bluster bombastic brazen bulwark buttress cacophony cajole callow capricious castigate cataclysm chastise chide clemency cogent cognizant cohort collateral colloquial collusion commensurate commiserate compunction conciliatory concur confluence congenial congruent construe consummate contemptuous contextualize contravene conundrum credo credulous debase decadent decry deft deify demur deprecate derision despot desultory dexterous diatribe dictum didactic diffident dilatory discomfit disparage dispassionate dissonance divest docile duplicity ebb ebullient edify efface egregious elucidate embargo emblematic enervate enigmatic enmity ephemeral epithet epitome equanimity equivocate erudite esoteric evince exacting exasperate exculpate exhort exigent exodus expunge extol extricate exuberant facetious fastidious feign fervor fester fetter fickle finesse flagrant flaunt fledgling flout foible forestall fortuitous fractious fulsome gainsay gamut gauche gaunt glib glut guile guileless hackneyed hapless harangue harbinger hegemony heinous heresy hermetic hiatus hubris iconoclast ignoble ignominious imbue imperious impetuous implacable implore imprudent impugn impute inauspicious incarcerate incipient incisive indict indigent indomitable inexorable infallible inimical iniquity innuendo inordinate inscrutable insurgent interminable intransigent intrepid invective inveterate irascible irreverent itinerant jaded jettison laconic languid languish largesse lassitude levity loath loquacious lurid magnanimous maladroit malady malcontent malfeasance maverick maxim melancholy menial mercurial mettle misconstrue mollify mores mutinous myopic nadir nebulous neophyte noxious obfuscate oblique officious opportune opulent ornate ostensible palatable palliate panacea pander pariah parochial parsimonious pejorative penchant perfidious perfunctory pernicious perpetrate peruse philanthropic piety pithy placate platitude plethora pliable polemic portent posterity preamble precept precipitate precipitous precocious predatory predilection presage prescient presumptuous pretentious prevaricate probity proclivity procrastinate prodigal prodigious progeny proscribe protracted provincial proviso prowess puerile pungent qualm rancor rapacious raze rebuke recalcitrant recluse replete reprieve reprisal reproach reprove repugnant rescind resplendent reverberate reverent ruminate ruse sacrosanct sagacious sanguine sardonic satiate scathing scourge sequester skirmish solicitous sordid specious spurn squander staid subjugate sublime subterfuge surreptitious taciturn temerity temperate tirade tortuous trenchant trepidation tumult ulterior umbrage unabashed unassuming uncanny unfettered unscrupulous usurp variegated venal virulent vitriolic vivacious vociferous volition wanton wily winsome wistful xenophobia yoke", "ARC": "abeyance abjure abrogate abstemious accost affront aggrandize aplomb approbation ardor aspersion astringent baleful blasé boorish bravado calumny celerity chicanery cloying coddle consecrate consternation cupidity demure diaphanous dilettante dirge dolorous effervescent effrontery ennui entreat ethereal evanescent expiate fatuous fealty feckless felicitous florid fulminate gall gibe gossamer histrionic hoary impecunious ineffable ingrate inveigle knell lugubrious machination maelstrom martinet maudlin noisome obdurate obeisance obsequious obstreperous opprobrium peccadillo penurious perspicacious pertinacious philistine phlegmatic plenitude proffer profligate punctilious pusillanimous querulous recondite regale repartee sanctimonious soporific supplicate sycophant tawdry timorous torpid torpor truculent upbraid", "SUP": "abstruse adulterate advent ambulatory canny chagrin conflagration conjure decorum egalitarian elated explicate façade fluster grimace hedonist impassive impertinent ludicrous personable pervade quaint rash sullen supercilious tranquil tremulous undulate"}).forEach(([k,v])=>v.split(" ").forEach(w=>ROUTE["s:"+w]=k));/* ROUTE_DATA_END */
+const HOLD = new Set(/* HOLD_DATA_BEGIN */[]/* HOLD_DATA_END */);
+const isLive = id=> !!WORDS[id] && !HOLD.has(id);
+const LIVEW = Object.values(WORDS).filter(o=>isLive(o.id));
+const stg = id=> STAGES.find(s=>s.id===id);
+STAGES.forEach(s=>{ s.reg=s.words; s.words=s.reg.filter(o=>isLive(o.id)); });
+(()=>{ const s=stg("s"), h=stg("h"), r=o=>ROUTE[o.id];
+  const hb=s.words.filter(o=>r(o)==="HB");
+  s.book = s.words.slice();                                   // word book: every released SAT word, tagged by route
+  h.words = h.words.concat(hb); h.book = h.words.slice();     // High School: h words + bridge words
+  s.words = s.words.filter(o=>!r(o) || r(o)==="CORE" || r(o)==="SUP");   // SAT Prep count: Core + Supplement (+ new SAT words)
+  s.pool = s.words.concat(hb);                                // new SAT words: Core → Supplement → bridge words not learned yet
+  s.phase = o=> r(o)==="SUP" ? 1 : r(o)==="HB" ? 2 : 0;
+})();
+const ADVS = {id:"s", adv:true, words: stg("s").book.filter(o=>ROUTE[o.id]==="ADV")};   // optional advanced practice
+
 const PETS = {
   common:["🐶","🐱","🐰","🐸","🐥","🐹","🐷","🐮","🐔","🐢"],
   rare:["🦊","🐼","🐨","🐧","🦉","🐙","🦦","🐳"],
@@ -2482,7 +2504,7 @@ const PETS = {
 const COLORS = ["#ff6b3d","#3d8bff","#3ccf6e","#8b5cf6","#ff4fa3","#ffd23f"];
 const INT = [0,1,3,7,14,30];   // review interval (days) by box
 const EGG = 1000;
-const APP_VERSION = "11.17 (quiz sentences differ from the word card; same / opposite meaning questions)";
+const APP_VERSION = "11.18 (curriculum: SAT words routed to High School / SAT Core / optional; new academic words)";
 
 /* ===================== STATE ===================== */
 const KEY = "wordquest_v1";
@@ -2534,7 +2556,7 @@ function ctxExplain(w){
 }
 // words with no authored clue (Elementary): explain with the word's meaning and, where they are app words, what the wrong choices mean
 // (SAT Context entries are skipped: they hold a second meaning of the word, which could mislead here)
-const FORMW={}; Object.values(WORDS).forEach(o=>{ if(o.stage==="c") return; [o.w,o.form,o.qform,o.tform].forEach(f=>{ f=(f||"").toLowerCase(); if(f && !FORMW[f]) FORMW[f]=o; }); });
+const FORMW={}; LIVEW.forEach(o=>{ if(o.stage==="c") return; [o.w,o.form,o.qform,o.tform].forEach(f=>{ f=(f||"").toLowerCase(); if(f && !FORMW[f]) FORMW[f]=o; }); });
 function basicWhy(w){
   const q=M && M.q && M.q[M.qi]; let others=[];
   if(q && q.t==="fill") others=(w.dis||[]).slice(0,3).map(d=>[d,FORMW[d.toLowerCase()]]);
@@ -2665,7 +2687,7 @@ function famPracticeItems(gid){
   const g=GROUPS.find(x=>x.id===gid), maxLv=Math.max(...g.stages.map(s=>LV[s]||0));
   const out=[];
   FAMS.forEach(f=>{
-    const ws=[f[0]].concat(f[3].map(m=>m[0])).flatMap(x=>Object.values(WORDS).filter(o=>o.w===x && g.stages.includes(o.stage)));
+    const ws=[f[0]].concat(f[3].map(m=>m[0])).flatMap(x=>LIVEW.filter(o=>o.w===x && g.stages.includes(o.stage)));
     if(!ws.length) return;
     const host = ws.find(o=>LV[o.stage]) || ws[0];
     const base=APPW[f[0]], bl= base && LV[base.stage] ? LV[base.stage] : LV[host.stage]||maxLv;
@@ -2698,6 +2720,13 @@ function screenPractice(gid){
       <small style="margin:4px 0 8px">Learned ${st.learned}/${st.total} · ⭐ ${st.master} · ${due} to review</small>
       <button class="btn blue small" onclick="startMission('${id}')">Practice ${SUB[id][1]} ▶</button>
     </div>`; }).join("");
+  if(gid==="S"){ const st=stageStats(p,ADVS), due=dueList(p).filter(x=>ROUTE[x]==="ADV").length; cards += `
+    <div class="stage big" style="width:100%;margin-bottom:10px;text-align:left">
+      <span class="gicon">🏔️</span> Advanced SAT words (optional)<small>Rarer words — not in the daily mission</small>
+      <div class="bar"><i style="width:${Math.round(st.learned/st.total*100)}%"></i></div>
+      <small style="margin:4px 0 8px">Learned ${st.learned}/${st.total} · ⭐ ${st.master} · ${due} to review</small>
+      <button class="btn blue small" onclick="startMission('adv')">Practice advanced words ▶</button>
+    </div>`; }
   const nf=famPracticeItems(gid).length;
   cards += `<div class="stage big" style="width:100%;margin-bottom:10px;text-align:left">
       <span class="gicon">👪</span> Word Family<small>Choose the right form: analyze · analysis · analytical…</small>
@@ -2729,9 +2758,10 @@ const PRIO = {
 };
 const tierOf = w=>{ const pr=PRIO[w.stage]; if(!pr) return 2; return pr[1].has(w.w)?1 : (pr[3]&&pr[3].has(w.w))?3 : 2; };
 function pickNew(p, stage, n){
-  const fresh = stage.words.filter(w=>!p.words[w.id]);
+  let fresh = (stage.pool||stage.words).filter(w=>!p.words[w.id]);
+  const learned = stage.words.length - stage.words.filter(w=>!p.words[w.id]).length;
+  if(stage.phase && fresh.length){ const ph=Math.min(...fresh.map(stage.phase)); fresh=fresh.filter(w=>stage.phase(w)===ph); }   // SAT: Core first, then Supplement, then bridge words
   if(!PRIO[stage.id]) return fresh.slice(0,n).map(w=>w.id);
-  const learned = stage.words.length - fresh.length;
   // early: mostly core words; later: standard words and some rare words are mixed in
   const W = learned<100 ? {1:7,2:3,3:0} : learned<300 ? {1:5,2:4,3:1} : {1:4,2:4,3:1};
   const q = {1:[],2:[],3:[]}; fresh.forEach(w=>q[tierOf(w)].push(w.id));
@@ -2754,7 +2784,7 @@ const FAMS = [["analyze","v.","분석하다",[["analysis","n.","분석",0,""],["
 const FIDX = {}; FAMS.forEach((f,i)=>{ FIDX[f[0]]=i; f[3].forEach(m=>{ if(!(m[0] in FIDX)) FIDX[m[0]]=i; }); });
 const famOf = w=> (w && (w.w in FIDX)) ? FAMS[FIDX[w.w]] : null;
 const LV = {e:1,m:2,h:3,s:4};
-const APPW = {}; Object.values(WORDS).forEach(o=>{ if(!APPW[o.w] || APPW[o.w].stage==="c") APPW[o.w]=o; });
+const APPW = {}; LIVEW.forEach(o=>{ if(!APPW[o.w] || APPW[o.w].stage==="c") APPW[o.w]=o; });
 // quiz items a word may get: only for the main vocabulary stages and only up to that stage's level
 function famItems(w){
   const f=famOf(w); if(!f || !LV[w.stage]) return [];
@@ -2934,10 +2964,13 @@ function startMission(only){
   const mixed = !only && MIX[g.id];
   let reviews;
   if(mixed) reviews = mixReviews(p, g.id, Math.max(6, daily+2));
-  else { reviews = dueList(p); if(only) reviews = reviews.filter(id=>WORDS[id].stage===only); reviews = reviews.slice(0, Math.max(6, daily+2)); }
+  else { reviews = dueList(p);
+    if(only==="adv") reviews = reviews.filter(id=>ROUTE[id]==="ADV");          // optional advanced SAT words
+    else if(only) reviews = reviews.filter(id=>WORDS[id].stage===only);
+    reviews = reviews.slice(0, Math.max(6, daily+2)); }
   let news, extra=[];
   if(mixed){ const pl=planMix(p, g.id, daily, reviews); news=pl.news; extra=pl.extra; }
-  else news = pickNew(p, STAGES.find(s=>s.id===(only||p.stage)), daily);
+  else news = pickNew(p, only==="adv" ? ADVS : STAGES.find(s=>s.id===(only||p.stage)), daily);
   if(!reviews.length && !news.length){
     render(`<div class="card" style="text-align:center"><div class="big">🏆</div>
       <div style="font-size:22px">You learned every word in this stage!</div>
@@ -2977,7 +3010,8 @@ function startMission(only){
   if(news.length) screenLearn(); else screenQuiz();
 }
 
-function areaTag(w){ const g=groupOf(w.stage); return (g && g.stages.length>1) ? `<span class="tag area">${AREA[w.stage]}</span>` : ""; }
+function areaTag(w){ if(w.stage==="s" && ROUTE[w.id]==="HB" && groupOf(P().stage).id==="H") return "";   // bridge word in a High School mission
+  const g=groupOf(w.stage); return (g && g.stages.length>1) ? `<span class="tag area">${AREA[w.stage]}</span>` : ""; }
 function quitBtn(){ return `<button class="back" onclick="if(window.__q){screenHome()}else{window.__q=1;this.textContent='Tap again to quit';setTimeout(()=>window.__q=0,2000)}">✕</button>`; }
 
 function screenLearn(){
@@ -3011,7 +3045,7 @@ function formDistractors(w, n=3){
   const k=infl(w), pk=posKey(w);
   const same = x=> x.id!==w.id && infl(x)===k && posKey(x)===pk && x.form.toLowerCase()!==w.form.toLowerCase();
   let pool = STAGES.find(s=>s.id===w.stage).words.filter(same);
-  if(pool.length<n) pool = pool.concat(Object.values(WORDS).filter(x=>same(x) && x.stage!==w.stage));
+  if(pool.length<n) pool = pool.concat(LIVEW.filter(x=>same(x) && x.stage!==w.stage));
   return shuffle(pool).slice(0,n);
 }
 function formText(x, cap){
@@ -3390,14 +3424,15 @@ function screenBook(sid){
   const p=P(); sid=sid||p.stage; const s=STAGES.find(x=>x.id===sid);
   const tabs=STAGES.map(x=>`<button class="pill" style="${x.id===sid?'background:var(--yellow)':''}" onclick="screenBook('${x.id}')">${bookLabel(x.id)}</button>`).join(" ");
   const q=(window.__bq||"").toLowerCase();
-  const list=s.words.slice().sort((a,b)=>a.w.localeCompare(b.w)).filter(w=>!q||w.w.includes(q)||w.ko.includes(q)||w.en.toLowerCase().includes(q));
+  const all=s.book||s.words, RT={ADV:"optional",ARC:"extra"};
+  const list=all.slice().sort((a,b)=>a.w.localeCompare(b.w)).filter(w=>!q||w.w.includes(q)||w.ko.includes(q)||w.en.toLowerCase().includes(q));
   const rows=list.map(w=>{ const r=p.words[w.id];
     const st = !r?'⬜':isBoss(r)?'👾':r.box>=4?'⭐':'🟩';
-    return `<div class="it">${st}<b>${esc(w.w)}</b><span>${esc(w.en)}<br><small>${esc(w.ko)}</small></span>${sayBtn(w.w)}</div>`;}).join("");
+    return `<div class="it">${st}<b>${esc(w.w)}${sid==="s"&&RT[ROUTE[w.id]]?`<br><small class="tag" style="font-size:12px">${RT[ROUTE[w.id]]}</small>`:sid==="h"&&w.stage==="s"?`<br><small class="tag" style="font-size:12px">also SAT</small>`:""}</b><span>${esc(w.en)}<br><small>${esc(w.ko)}</small></span>${sayBtn(w.w)}</div>`;}).join("");
   render(`<div class="top"><button class="back" onclick="screenHome()">◀</button><b style="font-size:20px">📖 Word Book</b></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">${tabs}</div>
     <input type="text" id="bq" class="en" placeholder="🔍 Search words or meanings" value="${esc(window.__bq||"")}" oninput="window.__bq=this.value;clearTimeout(window.__bt);window.__bt=setTimeout(()=>{screenBook('${sid}');const i=$('bq');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)">
-    <p class="note">${bookLabel(s.id)}: ${list.length} of ${s.words.length} · ⬜ new · 🟩 learning · ⭐ mastered · 👾 boss</p>
+    <p class="note">${bookLabel(s.id)}: ${list.length} of ${all.length} · ⬜ new · 🟩 learning · ⭐ mastered · 👾 boss</p>
     <div class="card list en">${rows}</div>`);
 }
 
