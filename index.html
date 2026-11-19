@@ -112,7 +112,7 @@ textarea{min-height:90px;font-size:19px}
 .modal{position:fixed;inset:0;background:rgba(20,25,50,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
 .modal .card{max-width:440px;width:100%}
 label{display:block;margin-top:10px;font-size:16px}
-.colors{display:flex;gap:8px;margin-top:6px}
+.colors{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .colors button{width:36px;height:36px;border-radius:10px;border:3px solid var(--line)}
 .colors button.on{outline:4px solid var(--orange)}
 .fam{margin-top:12px;background:#fff8e6;border:2px dashed #f0c060;border-radius:14px;padding:8px 12px;text-align:left}
@@ -2989,27 +2989,37 @@ const PETS = {
 const COLORS = ["#ff6b3d","#3d8bff","#3ccf6e","#8b5cf6","#ff4fa3","#ffd23f"];
 const INT = [0,1,3,7,14,30];   // review interval (days) by box
 const EGG = 1000;
-const APP_VERSION = "11.19 (integrated curriculum: 57 new words, Word Family forms, SAT Passage Practice, placement check)";
+const APP_VERSION = "11.20 (preview: open sign-up — welcome, add students, placement on sign-up; v11.19 curriculum unchanged)";
 
 /* ===================== STATE ===================== */
 const KEY = "wordquest_v1";
 let mem = null;
+// v11.20: a brand-new browser starts with NO students (no built-in profiles).
+// Saved data that cannot be read is never replaced automatically: LOAD_ERR keeps the raw text,
+// save() refuses to write, and the recovery screen lets a parent keep a copy, restore a backup or start over.
+let LOAD_ERR = null, SAVE_FAIL = false;
+const DEFAULT_REWARD = "Great work — today's mission is done! 🎉";
+function freshState(){ return {profiles:{}, reward:DEFAULT_REWARD, active:null}; }
+function okState(o){ return !!(o && typeof o==="object" && o.profiles && typeof o.profiles==="object" && !Array.isArray(o.profiles)); }
 function load(){
-  try{ const t = localStorage.getItem(KEY); if(t) return JSON.parse(t);}catch(e){}
-  return mem || {
-    profiles:{
-      a:{name:"막내", grade:"6th grade", color:"#ff6b3d", stage:"e", daily:5, coins:0, xp:0, words:{}, pets:[], days:{}},
-      b:{name:"셋째", grade:"10th grade", color:"#3d8bff", stage:"h", daily:10, coins:0, xp:0, words:{}, pets:[], days:{}}
-    },
-    reward:"Finish today's mission = 30 min of game time! 🎮",
-    active:null
-  };
+  let t=null;
+  try{ t = localStorage.getItem(KEY); }catch(e){ SAVE_FAIL=true; }
+  if(t){
+    let o=null; try{ o=JSON.parse(t); }catch(e){}
+    if(okState(o)) return o;
+    LOAD_ERR = t; return freshState();
+  }
+  return mem || freshState();
 }
 let S = load();
 if(S.reward==="오늘 미션 완료하면 게임 30분! 🎮") S.reward="Finish today's mission = 30 min of game time! 🎮";
 Object.values(S.profiles).forEach(p=>{ if(p.grade==="6학년")p.grade="6th grade"; if(p.grade==="10학년")p.grade="10th grade"; });
 try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
-function save(){ mem = S; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function save(){
+  if(LOAD_ERR) return;   // never write over saved data that could not be read
+  mem = S;
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); SAVE_FAIL=false; }catch(e){ SAVE_FAIL=true; }
+}
 const P = ()=>S.profiles[S.active];
 function today(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
 function streak(p){
@@ -3077,24 +3087,112 @@ function ava(color, big){ return `<div class="ava ${big?'big':''}"><div class="h
 
 /* ===================== SCREENS ===================== */
 const app = $("app");
-function render(html){ app.innerHTML = html; window.scrollTo(0,0); }
+function render(html){
+  const warn = SAVE_FAIL && !LOAD_ERR ? `<div class="fb no" style="margin-bottom:12px">⚠️ This browser did not save the latest progress (storage is full or blocked). Copy a backup code in ⚙️ Settings now so nothing is lost.</div>` : "";
+  app.innerHTML = warn + html; window.scrollTo(0,0);
+}
 
 function screenProfiles(){
+  if(LOAD_ERR) return screenRecover();
   S.active=null; save();
-  const cards = Object.entries(S.profiles).map(([k,p])=>`
+  const ids=Object.keys(S.profiles);
+  if(!ids.length) return screenWelcome();
+  const cards = ids.map(k=>{ const p=S.profiles[k], setup=onbOpen(p);
+    return `
     <button class="card prof" style="width:100%" onclick="choose('${k}')">
       ${ava(p.color)}
-      <div class="grow">${esc(p.name)} <small>${esc(p.grade)} · Lv.${level(p)} · 🔥${streak(p)} days · 🪙${p.coins}</small></div>
+      <div class="grow">${esc(p.name)} <small>${esc(p.grade)} · ${setup?'Setup not finished':`Lv.${level(p)} · 🔥${streak(p)} days · 🪙${p.coins}`}</small></div>
       <div style="font-size:28px">▶</div>
-    </button>`).join("");
+    </button>`;}).join("");
   render(`
     <h1>⛏️ Word Quest</h1>
-    <p class="sub">Who's playing today?</p>
+    <p class="sub">Who's learning today?</p>
     ${cards}
-    <button class="btn white small" onclick="screenSettings()">⚙️ Parent settings</button>
-    <p class="note" style="text-align:center;margin-top:14px">Progress is saved on this device.<br>${backupNote()}<br>Version ${APP_VERSION}</p>`);
+    <button class="btn green small" onclick="screenNewStudent()">➕ Add Student</button>
+    <div class="row" style="margin-top:8px">
+      <button class="btn white small" onclick="screenSettings()">⚙️ Settings</button>
+      <button class="btn white small" onclick="screenRestore()">📂 Restore Progress</button>
+    </div>
+    <p class="note" style="text-align:center;margin-top:14px">Progress is saved in this browser only.<br>${backupNote()}<br>Version ${APP_VERSION}</p>`);
 }
-function choose(k){ S.active=k; save(); screenHome(); }
+function choose(k){ if(!S.profiles[k]) return screenProfiles(); S.active=k; save(); if(onbOpen(P())) return screenOnbPlacement(); screenHome(); }
+
+/* ---------- v11.20 open sign-up: Welcome → New Student → Grade → Placement → Personal Home ----------
+   New students get an ID that is not their name (p_…), the same profile fields as before and one extra field,
+   p.onboarding {step, placement, created}. Existing students (a/b or any saved ID) are never changed by these screens. */
+const GRADES=[4,5,6,7,8,9,10,11,12], DAILY_OPTS=[3,5,8,10,15], STAGE_IDS=["e","m","l","h","s","c","t"];
+const gradeLabel = n=> `${n}th grade`;                         // 4th … 12th (same format as the saved "6th grade" / "10th grade")
+const gradeNum = g=>{ const m=String(g||"").match(/\d+/); return m?+m[0]:null; };
+const gradeStart = n=> n>=7 ? "m" : "e";                       // same rule as the placement check's starting level
+const onbOpen = p=> !!(p && p.onboarding && p.onboarding.step!=="done");
+function newPid(){ let id; do{ id="p_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }while(S.profiles[id]); return id; }
+
+function screenWelcome(){
+  render(`
+    <h1>⛏️ Word Quest</h1>
+    <p class="sub">Build your vocabulary, step by step</p>
+    <div class="card" style="text-align:center">
+      <p class="note" style="margin-top:0">Grades 4–12 · Academic reading · SAT preparation</p>
+      <p>Learn a few new words every day, review them at the right time, and collect pets on your Word Island.</p>
+      <button class="btn green" onclick="screenNewStudent()">Start Learning ▶</button>
+      <button class="btn white small" style="margin-top:10px" onclick="screenRestore()">📂 Restore Progress</button>
+      <p class="note" style="margin-bottom:0">Your progress is saved in this browser. Export a backup to use it on another device.</p>
+    </div>
+    <p class="note" style="text-align:center">Version ${APP_VERSION}</p>`);
+}
+function screenRestore(){
+  render(`<div class="top"><button class="back" onclick="screenProfiles()">◀</button><b style="font-size:20px">📂 Restore Progress</b></div>
+    <div class="card"><p class="note" style="margin-top:0">Use a backup file or backup code saved from Word Quest (any earlier version). Restoring replaces the progress in this browser.</p>
+      <div class="row"><label class="btn white small" style="text-align:center">📂 Restore from file<input type="file" accept=".json,.txt,application/json" style="display:none" onchange="restoreFile(this)"></label><button class="btn white small" onclick="restoreCodeUI()">⌨️ Restore from code</button></div>
+      <div id="bkmsg"></div></div>`);
+}
+
+let NS=null;   // sign-up form in progress (saved only when "Continue" is pressed)
+function screenNewStudent(){
+  NS = NS || {name:"", grade:null, color:COLORS[Object.keys(S.profiles).length%COLORS.length], daily:5, err:""};
+  const gbtn = n=>`<button style="width:auto;padding:0 12px;background:${NS.grade===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="nsKeep();NS.grade=${n};screenNewStudent()">${n}</button>`;
+  render(`<div class="top"><button class="back" onclick="NS=null;screenProfiles()">◀</button><b style="font-size:20px">➕ New student</b></div>
+    <div class="card">
+      <label>What should we call you? <input type="text" id="ns_name" maxlength="20" placeholder="Nickname (no real name needed)" value="${esc(NS.name)}"></label>
+      <label>What grade are you in? <span class="note">(US grade)</span></label>
+      <div class="colors" id="ns_grades">${GRADES.map(gbtn).join("")}</div>
+      <label>Choose a character color</label>
+      <div class="colors">${COLORS.map(c=>`<button style="background:${c}" class="${NS.color===c?'on':''}" onclick="nsKeep();NS.color='${c}';screenNewStudent()"></button>`).join("")}</div>
+      <label>How many new words each day?</label>
+      <div class="colors">${DAILY_OPTS.map(n=>`<button style="width:auto;padding:0 10px;background:${NS.daily===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="nsKeep();NS.daily=${n};screenNewStudent()">${n}</button>`).join("")}</div>
+      <p class="note">You can change all of this later in ⚙️ Settings.</p>
+      <div id="ns_err">${NS.err?`<div class="fb no">${esc(NS.err)}</div>`:""}</div>
+      <button class="btn green" style="margin-top:10px" onclick="nsCreate()">Continue ▶</button>
+    </div>`);
+}
+function nsKeep(){ const e=$("ns_name"); if(e && NS) NS.name=e.value; }
+function nsCreate(){
+  nsKeep();
+  const name=String(NS.name||"").trim().slice(0,20), g=NS.grade;
+  if(!name){ NS.err="Please type a nickname (at least 1 letter)."; return screenNewStudent(); }
+  if(!GRADES.includes(g)){ NS.err="Please choose a grade from 4 to 12."; return screenNewStudent(); }
+  const daily = DAILY_OPTS.includes(NS.daily) ? NS.daily : 5;
+  const id=newPid();
+  S.profiles[id]={name, grade:gradeLabel(g), color:COLORS.includes(NS.color)?NS.color:COLORS[0], stage:gradeStart(g), daily,
+    coins:0, xp:0, words:{}, pets:[], days:{}, onboarding:{step:"placement", placement:null, created:today()}};
+  S.active=id; NS=null; save();
+  screenOnbPlacement();
+}
+function screenOnbPlacement(){
+  const p=P(), n=gradeNum(p.grade), sg=groupOf(gradeStart(n||4));
+  render(`<div class="top"><button class="back" onclick="screenProfiles()">◀</button><b style="font-size:20px">🧭 Find your starting point</b></div>
+    <div class="card" style="text-align:center">
+      ${ava(p.color)}
+      <div style="font-size:22px;margin-top:6px">Hi, ${esc(p.name)}!</div>
+      <p><b>A quick check, not a grade or IQ test.</b></p>
+      <p class="note">About 10 minutes: 8 words per level, plus 6 basic words. Choose “I don't know” instead of guessing. Your grade (${esc(p.grade)}) only decides where the check begins — the result suggests a starting level, and you can still choose another one. Younger students can decide together with a parent.</p>
+      <button class="btn green" onclick="diagStart(S.active,'onb')">Take the Placement Check ▶</button>
+      <button class="btn white small" style="margin-top:10px" onclick="onbSkip()">Start with the suggested level (${sg.icon} ${sg.name})</button>
+      <p class="note" style="margin-bottom:0">Skipping is fine — this starting level is temporary and based on grade only. You can take the check later from the home screen or ⚙️ Settings.</p>
+    </div>`);
+}
+function onbDone(p, how){ if(p.onboarding){ p.onboarding.step="done"; if(how) p.onboarding.placement=how; } }
+function onbSkip(){ const p=P(); onbDone(p,"skipped"); save(); screenHome(); }
 
 function stageStats(p, s){
   let learned=0, master=0;
@@ -3123,13 +3221,14 @@ function screenHome(){
     : `<div class="empty">No pets yet.<br>Collect coins and hatch an egg! 🥚</div>`;
   render(`
     <div class="top">
-      <button class="back" onclick="screenProfiles()">◀</button>
+      <button class="back" onclick="screenProfiles()" title="Switch student">◀ 👥</button>
       <span class="pill">Lv.${lv}</span><span class="pill">🪙 ${p.coins}</span><span class="pill">🔥 ${streak(p)} days</span>
     </div>
     <div class="card" style="display:flex;align-items:center;gap:12px">
       ${ava(p.color)}
       <div class="grow">
         <div style="font-size:24px">${esc(p.name)}</div>
+        <div class="note" style="margin:0">${esc(p.grade)} · ${groupOf(p.stage).icon} ${groupOf(p.stage).name}</div>
         <div class="bar" style="margin:6px 0 2px"><i style="width:${xpIn/2}%;background:var(--blue)"></i></div>
         <div class="note">${200-xpIn} XP to next level</div>
       </div>
@@ -3138,6 +3237,7 @@ function screenHome(){
       <div style="font-size:22px">${doneToday?'✅ Mission complete!':'🗡️ Today\'s Mission'}</div>
       <div class="note" style="margin:4px 0 0">📍 ${groupOf(p.stage).name} · ${groupOf(p.stage).mix}</div><div class="note" style="margin:2px 0 12px">${p.daily||5} new words · ${due} to review ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 Boss alert!':''} </div>
       <button class="btn green" onclick="startMission()">${doneToday?'Play again ▶':'Start mission ▶'}</button>
+      ${p.onboarding && p.onboarding.placement==="skipped" && !p.diag?`<div class="note" style="margin-top:10px">📍 Starting level based on grade only. <button class="plink" style="display:inline" onclick="diagStart(S.active,'home')">🧭 Take the placement check</button></div>`:''}
       <div class="note" style="margin-top:8px">${esc(S.reward)}</div>
       ${MIX[groupOf(p.stage).id]?`<button class="plink" onclick="screenPractice('${groupOf(p.stage).id}')">🎯 Practice by type</button>`:''}
       ${pasGroupOK(p)?`<button class="plink" onclick="startPassages()">📖 SAT Passage Practice${pasDueCount(p)?` · ${pasDueCount(p)} to review`:''}</button>`:''}
@@ -3994,11 +4094,34 @@ function restoreText(txt){
   let o=null; try{ o=JSON.parse(String(txt).trim()); }catch(e){}
   const data = o && (o.data||o);
   if(!data || !data.profiles || typeof data.profiles!=="object"){ $("bkmsg").innerHTML=`<div class="fb no" style="margin-top:8px">❌ That doesn't look like a Word Quest backup.</div>`; return; }
-  const names=Object.values(data.profiles).map(p=>`${esc(p.name)}: ${Object.keys(p.words||{}).length} words, 🪙${p.coins||0}`).join("<br>");
+  const names=Object.values(data.profiles).map(p=>`${esc(p.name)}: ${Object.keys(p.words||{}).length} words, 🪙${p.coins||0}`).join("<br>") || "No students in this backup.";
   $("bkmsg").innerHTML=`<div class="modal"><div class="card" style="text-align:center"><div style="font-size:19px">Replace the progress on this device with this backup?</div><p class="note">${names}</p>
     <div class="row"><button class="btn white small" onclick="$('bkmsg').innerHTML=''">Cancel</button><button class="btn green small" id="rgo">Restore</button></div></div></div>`;
-  $("rgo").onclick=()=>{ S=data; S.active=null; Object.values(S.profiles).forEach(p=>{ p.words=p.words||{}; p.pets=p.pets||[]; p.days=p.days||{}; }); save(); screenProfiles(); };
+  $("rgo").onclick=()=>{ keepUnreadable(); S=data; S.active=null; Object.values(S.profiles).forEach(p=>{ p.words=p.words||{}; p.pets=p.pets||[]; p.days=p.days||{}; }); save(); screenProfiles(); };
 }
+
+/* ---------- v11.20: unreadable saved data (never overwritten without a choice) ---------- */
+function keepUnreadable(){ if(!LOAD_ERR) return; try{ localStorage.setItem(KEY+"_unreadable_"+Date.now(), LOAD_ERR); }catch(e){} LOAD_ERR=null; }
+function screenRecover(){
+  render(`<h1>⛏️ Word Quest</h1>
+    <div class="card"><b>⚠️ Saved progress could not be read</b>
+      <p class="note">The progress saved in this browser is damaged or incomplete. Nothing has been deleted or replaced. Choose what to do:</p>
+      <p><b>1.</b> Keep a copy of the saved data (to send for repair).</p>
+      <div class="row"><button class="btn white small" onclick="rawDownload()">⬇️ Save a copy</button><button class="btn white small" onclick="rawShow()">📋 Show as text</button></div>
+      <p style="margin-top:14px"><b>2.</b> Restore from a backup you saved earlier.</p>
+      <div class="row"><label class="btn white small" style="text-align:center">📂 Restore from file<input type="file" accept=".json,.txt,application/json" style="display:none" onchange="restoreFile(this)"></label><button class="btn white small" onclick="restoreCodeUI()">⌨️ Restore from code</button></div>
+      <p style="margin-top:14px"><b>3.</b> Start over with no students. A copy of the damaged data stays in this browser.</p>
+      <button class="btn small" style="background:var(--red);color:#fff" onclick="recoverAsk()">🗑️ Start over</button>
+      <div id="bkmsg"></div></div>`);
+}
+function rawShow(){ $("bkmsg").innerHTML=`<textarea style="width:100%;height:120px;font-size:11px" readonly onclick="this.select()">${esc(LOAD_ERR||"")}</textarea>`; }
+function rawDownload(){
+  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([LOAD_ERR||""],{type:"text/plain"}));
+    a.download="wordquest-unreadable-data.txt"; document.body.appendChild(a); a.click(); a.remove(); }catch(e){ rawShow(); }
+}
+function recoverAsk(){ $("bkmsg").innerHTML=`<div class="modal"><div class="card" style="text-align:center"><div style="font-size:19px">Start over with no students?</div><p class="note">A copy of the damaged data is kept in this browser.</p>
+    <div class="row"><button class="btn white small" onclick="$('bkmsg').innerHTML=''">Cancel</button><button class="btn small" style="background:var(--red);color:#fff" onclick="recoverFresh()">Start over</button></div></div></div>`; }
+function recoverFresh(){ keepUnreadable(); S=freshState(); save(); screenProfiles(); }
 
 /* ===================== v11.19 additional modes =====================
    All three modes save only into their own fields (p.pas, p.diag, p.basics). They never change word records (p.words, p.hist),
@@ -4127,12 +4250,13 @@ function diagItems(p, lv){
   const use=(pool.length>=8?pool:st.words.filter(w=>w.en));
   return shuffle(use).slice(0,8).map(w=>({w:w.w, ok:w.en, opts:shuffle([{t:w.en,ok:true}].concat(distractors(w,"en").map(x=>({t:x.en,ok:false}))))}));
 }
-function diagStart(k){
+function diagBack(){ const f=DG&&DG.from; if(f==="onb") return screenOnbPlacement(); if(f==="home") return screenHome(); screenSettings(); }
+function diagStart(k, from){
   S.active=k; save(); const p=P(), lv=diagStartLevel(p);
-  DG={k, start:lv, lv, scores:{}, items:diagItems(p,lv), i:0, right:0, phase:"words", missed:[]};
-  render(`<div class="top"><button class="back" onclick="screenSettings()">◀</button><b style="font-size:20px">🧭 Placement check</b></div>
+  DG={k, from:from||"settings", start:lv, lv, scores:{}, items:diagItems(p,lv), i:0, right:0, phase:"words", missed:[]};
+  render(`<div class="top"><button class="back" onclick="diagBack()">◀</button><b style="font-size:20px">🧭 Placement check</b></div>
     <div class="card"><p>This is a <b>short placement check</b> (8 questions per level, about 10 minutes), not a full test.</p>
-    <p class="note">${esc(p.name)} chooses the meaning of each word. "I don't know" is fine — please don't guess. The result only <b>suggests</b> a starting stage; a parent decides. Words, review dates, coins and pets are not changed.</p>
+    <p class="note">${esc(p.name)} chooses the meaning of each word. "I don't know" is fine — please don't guess. The result only <b>suggests</b> a starting stage; ${DG.from==="settings"?"a parent decides":"you can decide together with a parent"}. Words, review dates, coins and pets are not changed.</p>
     <button class="btn green" onclick="screenDiag()">Start ▶</button></div>`);
 }
 function screenDiag(){
@@ -4178,19 +4302,26 @@ function screenDiagResult(){
   const p=P(), d=p.diag, cur=groupOf(p.stage);
   const rows=DLV.map(x=>`<div class="it"><b>${DLN[x]}</b><span>${d.scores[x]===undefined?'<span class="note">not tested</span>':`${d.scores[x]}/8 ${d.scores[x]>=7?'✅ passed':'— not passed'}`}</span></div>`).join("");
   const sg=GROUPS.find(g=>g.stages.includes(d.suggested));
-  render(`<div class="top"><button class="back" onclick="screenSettings()">◀</button><b style="font-size:20px">🧭 Placement result</b></div>
+  const onb = DG && DG.from!=="settings";
+  render(`<div class="top">${onb?'':'<button class="back" onclick="screenSettings()">◀</button>'}<b style="font-size:20px">🧭 Placement result</b></div>
     <div class="card"><p class="note">Short placement check (pilot) — a starting suggestion, not a full test. A level counts as passed at 7 or 8 of 8. The suggestion is the highest level passed (Elementary if none was passed).</p>
       <div class="list">${rows}</div>
       <p style="font-size:19px;margin-top:10px">Suggested start: <b>${sg.icon} ${sg.name}</b></p>
-      <p class="note">Now studying: ${cur.icon} ${cur.name}. Changing the start stage does not change any learned words, review dates, coins or pets.</p>
-      <div class="row"><button class="btn green small" onclick="diagChoose(true)">Use suggestion (parent)</button><button class="btn white small" onclick="diagChoose(false)">Keep current stage</button></div></div>
+      ${onb?`<p class="note">Your grade is not your level: this suggestion comes from your answers. Younger students can decide together with a parent.</p>
+      <div class="row"><button class="btn green small" onclick="diagChoose(true)">Use This Level</button><button class="btn white small" onclick="diagOther()">Choose Another Level</button></div><div id="dgo"></div></div>`
+      :`<p class="note">Now studying: ${cur.icon} ${cur.name}. Changing the start stage does not change any learned words, review dates, coins or pets.</p>
+      <div class="row"><button class="btn green small" onclick="diagChoose(true)">Use suggestion (parent)</button><button class="btn white small" onclick="diagChoose(false)">Keep current stage</button></div></div>`}
     <div class="card"><b>🧱 Basic words</b>
       ${d.basicsMissed.length?`<p>Words to review: <span class="en">${d.basicsMissed.map(esc).join(", ")}</span> (and their other forms).</p>
         <p class="note">These basic words have no card in the app, so they are practiced in "Basic words review" on the home screen.</p>`:'<p class="note">All 6 basic words were answered correctly. Other forms of these words are not marked as known.</p>'}</div>`);
 }
 function diagChoose(use){
-  const p=P(); if(use){ p.stage=p.diag.suggested; } p.diag.chosen=use?p.diag.suggested:p.stage; save(); screenHome();
+  const p=P(); if(use){ p.stage=p.diag.suggested; } p.diag.chosen=use?p.diag.suggested:p.stage; onbDone(p,"done"); save(); screenHome();
 }
+function diagOther(){
+  $("dgo").innerHTML=`<div class="stages" style="margin-top:10px">${GROUPS.map(g=>`<button class="stage big" onclick="diagPick('${g.stages[0]}')"><span class="gicon">${g.icon}</span> ${g.name}<small>${g.sub}</small></button>`).join("")}</div>`;
+}
+function diagPick(st){ const p=P(); if(!STAGE_IDS.includes(st)) return; p.stage=st; p.diag.chosen=st; onbDone(p,"done"); save(); screenHome(); }
 
 /* ---------- Problem reports ---------- */
 const FLAGS=["The answer is wrong","Two answers could be right","Spelling / grammar mistake","Explanation is confusing","Something else"];
@@ -4220,7 +4351,7 @@ function screenSettings(){
   const prof = Object.entries(S.profiles).map(([k,p])=>`
     <div class="card">
       <label>Name <input type="text" id="n_${k}" value="${esc(p.name)}"></label>
-      <label>Grade <input type="text" id="g_${k}" value="${esc(p.grade)}"></label>
+      <label>Grade <select id="g_${k}" style="width:100%;font-size:18px;padding:8px;border-radius:10px;border:3px solid var(--line)">${gradeOpts(p.grade)}</select></label>
       <label>New words per day</label>
       <div class="colors">${[3,5,8,10,15].map(n=>`<button style="width:auto;padding:0 10px;background:${(p.daily||5)===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="S.profiles['${k}'].daily=${n};save();screenSettings()">${n}</button>`).join("")}</div>
       <label>Character color</label>
@@ -4229,8 +4360,10 @@ function screenSettings(){
       ${p.diag?`<div class="note">Last check: suggested ${esc(DLN[p.diag.suggested]||p.diag.suggested)}${p.diag.chosen?` · now ${esc(DLN[p.diag.chosen]||subName(p.diag.chosen))}`:''}</div>`:''}
       <button class="btn white small" style="margin-top:12px" onclick="askReset('${k}')">🗑️ Reset ${esc(p.name)}'s progress</button>
     </div>`).join("");
-  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ Save</button><b style="font-size:20px">⚙️ Parent settings</b></div>
+  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ Save</button><b style="font-size:20px">⚙️ Settings</b></div>
+    <p class="note">Settings are not locked. On a shared device, any student can open this page.</p>
     ${prof}
+    <button class="btn green small" style="margin-bottom:12px" onclick="saveSettings();screenNewStudent()">➕ Add Student</button>
     <div class="card"><label>Mission reward message <input type="text" id="rw" value="${esc(S.reward)}"></label>
     <p class="note">Shown with the completion stamp after each mission.</p></div>
     <div class="card"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" style="width:auto" ${S.useReviewEx!==false?"checked":""} onchange="S.useReviewEx=this.checked;save()"> Use new review sentences</label>
@@ -4246,8 +4379,12 @@ function screenSettings(){
     ${reportsCard()}
     <div id="modal"></div>`);
 }
+// the saved grade text stays exactly as it was unless a different grade is chosen
+function gradeOpts(g){ const exact=GRADES.find(n=>gradeLabel(n)===g);
+  return (exact?"":`<option value="keep" selected>${esc(g||"(not set)")}</option>`) + GRADES.map(n=>`<option value="${n}" ${n===exact?"selected":""}>Grade ${n}</option>`).join(""); }
 function saveSettings(){
-  Object.keys(S.profiles).forEach(k=>{ S.profiles[k].name=$("n_"+k).value.trim()||S.profiles[k].name; S.profiles[k].grade=$("g_"+k).value.trim(); });
+  Object.keys(S.profiles).forEach(k=>{ const p=S.profiles[k]; p.name=$("n_"+k).value.trim()||p.name;
+    const v=$("g_"+k).value, n=+v; if(v!=="keep" && GRADES.includes(n) && gradeLabel(n)!==p.grade) p.grade=gradeLabel(n); });
   S.reward=$("rw").value.trim()||S.reward; save(); screenProfiles();
 }
 function askReset(k){
@@ -4259,7 +4396,9 @@ function askReset(k){
 function doReset(k){ const p=S.profiles[k]; Object.assign(p,{coins:0,xp:0,words:{},pets:[],days:{},hist:{}}); save(); screenSettings(); }
 
 /* start */
-if(S.active && S.profiles[S.active]) screenHome(); else screenProfiles();
+if(LOAD_ERR) screenRecover();
+else if(S.active && S.profiles[S.active]) { if(onbOpen(P())) screenOnbPlacement(); else screenHome(); }
+else screenProfiles();
 </script>
 </body>
 </html>
