@@ -115,6 +115,18 @@ label{display:block;margin-top:10px;font-size:16px}
 .colors{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .colors button{width:36px;height:36px;border-radius:10px;border:3px solid var(--line)}
 .colors button.on{outline:4px solid var(--orange)}
+/* v11.20 beta: touch targets at least 44px, visible keyboard focus */
+.colors button{width:44px;height:44px}
+.plink{min-height:44px;padding:8px 6px}
+.back{min-height:44px;min-width:44px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,label.btn:focus-within{outline:4px solid #1a5cff;outline-offset:2px}
+.gate input{text-align:center;font-size:26px}
+.more{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.more .btn{font-size:16px;padding:10px 8px;min-height:52px}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:2px dashed #e3e6f0;font-size:17px}
+.kv:last-child{border-bottom:none}
+input[type=checkbox]{width:26px!important;height:26px;flex:none}
+label:has(> input[type=checkbox]){min-height:44px}
 .fam{margin-top:12px;background:#fff8e6;border:2px dashed #f0c060;border-radius:14px;padding:8px 12px;text-align:left}
 .fam summary{cursor:pointer;font-weight:700}
 .frow{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid #f3e2b8}
@@ -2989,7 +3001,7 @@ const PETS = {
 const COLORS = ["#ff6b3d","#3d8bff","#3ccf6e","#8b5cf6","#ff4fa3","#ffd23f"];
 const INT = [0,1,3,7,14,30];   // review interval (days) by box
 const EGG = 1000;
-const APP_VERSION = "11.20 (preview: open sign-up — welcome, add students, placement on sign-up; v11.19 curriculum unchanged)";
+const APP_VERSION = "11.20-beta1 (public beta prep: parent check, safer backups, clearer home; v11.19 curriculum unchanged)";
 
 /* ===================== STATE ===================== */
 const KEY = "wordquest_v1";
@@ -2999,7 +3011,10 @@ let mem = null;
 // save() refuses to write, and the recovery screen lets a parent keep a copy, restore a backup or start over.
 let LOAD_ERR = null, SAVE_FAIL = false;
 const DEFAULT_REWARD = "Great work — today's mission is done! 🎉";
-function freshState(){ return {profiles:{}, reward:DEFAULT_REWARD, active:null}; }
+function freshState(){ return {profiles:{}, reward:DEFAULT_REWARD, active:null, extGrammar:false}; }
+// Sentence grammar check uses an outside service (LanguageTool). New browsers start with it OFF; browsers that
+// already used Word Quest before v11.20 keep it ON (field missing) until a parent changes it.
+const grammarOn = ()=> S.extGrammar!==false;
 function okState(o){ return !!(o && typeof o==="object" && o.profiles && typeof o.profiles==="object" && !Array.isArray(o.profiles)); }
 function load(){
   let t=null;
@@ -3109,13 +3124,56 @@ function screenProfiles(){
     <p class="sub">Who's learning today?</p>
     ${cards}
     <button class="btn green small" onclick="screenNewStudent()">➕ Add Student</button>
+    ${backupBanner()}
     <div class="row" style="margin-top:8px">
-      <button class="btn white small" onclick="screenSettings()">⚙️ Settings</button>
+      <button class="btn white small" onclick="openParent()">👪 Parent Settings</button>
       <button class="btn white small" onclick="screenRestore()">📂 Restore Progress</button>
     </div>
-    <p class="note" style="text-align:center;margin-top:14px">Progress is saved in this browser only.<br>${backupNote()}<br>Version ${APP_VERSION}</p>`);
+    <p class="note" style="text-align:center;margin-top:14px">Progress is saved in this browser only — clearing browser data erases it.<br>${backupNote()}<br><button class="plink" onclick="screenAbout()">🔒 About your data</button><br>Version ${APP_VERSION}</p>`);
+}
+function openParent(){ parentGate("Parent Settings: levels, backups, reset and delete.", screenSettings); }
+// gentle reminder: shown on the student list when someone has studied and there is no recent backup; "Later" hides it for 7 days
+function backupBanner(){
+  const studied=Object.values(S.profiles).reduce((a,p)=>a+Object.keys(p.days||{}).length,0);
+  const age = S.lastBackup ? today()-S.lastBackup : null;
+  const due = age===null ? studied>=3 : age>=14;
+  if(!due || (S.bkSnooze && S.bkSnooze>today())) return "";
+  return `<div class="card" style="background:#fff8de"><b>💾 Time for a backup</b>
+    <p class="note" style="margin:4px 0 8px">${age===null?"No backup has been saved yet.":`Last backup: ${age} days ago.`} Progress lives only in this browser, so a backup keeps it safe if browser data is cleared or you change devices.</p>
+    <div class="row"><button class="btn blue small" onclick="parentGate('Save a backup of all students in this browser.', ()=>{ screenSettings(); const c=$('bkcard'); if(c) c.scrollIntoView(); })">Back up now (parent)</button><button class="btn white small" onclick="S.bkSnooze=today()+7;save();screenProfiles()">Remind me later</button></div></div>`;
 }
 function choose(k){ if(!S.profiles[k]) return screenProfiles(); S.active=k; save(); if(onbOpen(P())) return screenOnbPlacement(); screenHome(); }
+
+/* ---------- v11.20 beta: parent check ----------
+   Asks a grown-up before level changes, applying a placement result, Parent Settings, reset and delete.
+   It is a reminder to involve a parent, NOT security: everything is stored in this browser and can be changed by anyone using it.
+   With a parent PIN set (4 digits, stored in this browser), the PIN is asked; otherwise a grown-up math question. */
+let PG=null;
+function parentGate(why, ok, opt){
+  opt=opt||{};
+  const pin=/^\d{4}$/.test(S.parentPin||"") ? S.parentPin : null, hard=!!opt.hard || !pin;
+  const a=pin&&!opt.hard ? 0 : 12+Math.floor(Math.random()*8), b=pin&&!opt.hard ? 0 : 3+Math.floor(Math.random()*7);
+  const usePin = pin && !opt.hard;
+  PG={ok, ans: usePin ? pin : String(a*b), cancel:opt.onCancel||null, why, opt};
+  let box=$("pgate"); if(!box){ box=document.createElement("div"); box.id="pgate"; document.body.appendChild(box); }
+  box.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="pg_t"><div class="card gate" style="text-align:center">
+    <div id="pg_t" style="font-size:21px">👪 Parent check</div>
+    <p>${esc(why)}</p>
+    <label for="pg_in">${usePin?'Parent PIN':`Grown-ups: what is ${a} × ${b}?`}</label>
+    <input id="pg_in" type="text" inputmode="numeric" autocomplete="off" maxlength="6">
+    <div id="pg_msg"></div>
+    <div class="row" style="margin-top:12px"><button class="btn white small" onclick="pgClose()">${esc(opt.cancelLabel||'Cancel')}</button><button class="btn green small" onclick="pgCheck()">OK</button></div>
+    ${usePin?`<button class="plink" onclick="pgForgot()">Forgot the PIN?</button>`:''}
+    <p class="note" style="margin-bottom:0">This is a reminder to ask a parent, not a security lock: anyone using this browser can change the saved progress.</p></div></div>`;
+  const i=$("pg_in"); i.focus(); i.onkeydown=e=>{ if(e.key==="Enter") pgCheck(); if(e.key==="Escape") pgClose(); };
+}
+function pgClose(){ const b=$("pgate"); if(b) b.innerHTML=""; const c=PG&&PG.cancel; PG=null; if(c) c(); }
+function pgCheck(){
+  if(!PG) return; const v=($("pg_in").value||"").replace(/\s/g,"");
+  if(v===PG.ans){ const f=PG.ok; $("pgate").innerHTML=""; PG=null; f(); return; }
+  $("pg_msg").innerHTML=`<div class="fb no">That's not right. Please ask a parent.</div>`; $("pg_in").select();
+}
+function pgForgot(){ const g=PG; if(!g) return; parentGate(g.why, g.ok, Object.assign({}, g.opt, {hard:true})); }
 
 /* ---------- v11.20 open sign-up: Welcome → New Student → Grade → Placement → Personal Home ----------
    New students get an ID that is not their name (p_…), the same profile fields as before and one extra field,
@@ -3136,9 +3194,27 @@ function screenWelcome(){
       <p>Learn a few new words every day, review them at the right time, and collect pets on your Word Island.</p>
       <button class="btn green" onclick="screenNewStudent()">Start Learning ▶</button>
       <button class="btn white small" style="margin-top:10px" onclick="screenRestore()">📂 Restore Progress</button>
-      <p class="note" style="margin-bottom:0">Your progress is saved in this browser. Export a backup to use it on another device.</p>
+      <p class="note" style="margin-bottom:0">No account, email or real name needed. Progress is saved only in this browser — a parent can save a backup to move it to another device.</p>
+      <button class="plink" onclick="screenAbout()">🔒 About your data</button>
     </div>
     <p class="note" style="text-align:center">Version ${APP_VERSION}</p>`);
+}
+function screenAbout(){
+  const back = S.active && S.profiles[S.active] ? "screenHome()" : "screenProfiles()";
+  render(`<div class="top"><button class="back" onclick="${back}" aria-label="Back">◀</button><b style="font-size:20px">🔒 About your data</b></div>
+    <div class="card"><b>What Word Quest keeps</b>
+      <p class="note">A nickname, a US grade, a color, and learning progress (words, review dates, coins, pets, placement results). No account, real name, email or birth date is asked for.</p>
+      <b>Where it is kept</b>
+      <p class="note">Only in this browser on this device. It is not sent to a server and is not shared between devices. Students who use the same browser can see each other's nicknames on the student list.</p>
+      <b>How it can be lost</b>
+      <p class="note">Clearing browsing data or site data, uninstalling the browser, or using a private/incognito window erases progress. Word Quest cannot recover it without a backup. A parent can save a backup file or code in 👪 Parent Settings and restore it on another device.</p>
+      <b>Outside services</b>
+      <p class="note">• Fonts are loaded from Google Fonts (your device's IP address reaches Google; no progress is sent).<br>
+        • Sentence grammar check (bonus stage) sends the student's sentence to LanguageTool (languagetool.org). It is <b>${grammarOn()?'ON':'OFF'}</b> in this browser; a parent can change it in Parent Settings.<br>
+        • Word pronunciation uses the device's own voice.<br>• No ads, no tracking or analytics.</p>
+      <b>Parent check</b>
+      <p class="note">Some actions ask a grown-up first (changing a level, Parent Settings, reset, delete). It is a reminder, not a lock.</p>
+    </div>`);
 }
 function screenRestore(){
   render(`<div class="top"><button class="back" onclick="screenProfiles()">◀</button><b style="font-size:20px">📂 Restore Progress</b></div>
@@ -3149,21 +3225,24 @@ function screenRestore(){
 
 let NS=null;   // sign-up form in progress (saved only when "Continue" is pressed)
 function screenNewStudent(){
+  const first=!NS;
   NS = NS || {name:"", grade:null, color:COLORS[Object.keys(S.profiles).length%COLORS.length], daily:5, err:""};
-  const gbtn = n=>`<button style="width:auto;padding:0 12px;background:${NS.grade===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="nsKeep();NS.grade=${n};screenNewStudent()">${n}</button>`;
+  const gbtn = n=>`<button style="width:auto;min-width:44px;padding:0 12px;background:${NS.grade===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:18px" aria-label="Grade ${n}" aria-pressed="${NS.grade===n}" onclick="nsKeep();NS.grade=${n};NS.f='Grade ${n}';screenNewStudent()">${n}</button>`;
   render(`<div class="top"><button class="back" onclick="NS=null;screenProfiles()">◀</button><b style="font-size:20px">➕ New student</b></div>
     <div class="card">
-      <label>What should we call you? <input type="text" id="ns_name" maxlength="20" placeholder="Nickname (no real name needed)" value="${esc(NS.name)}"></label>
-      <label>What grade are you in? <span class="note">(US grade)</span></label>
-      <div class="colors" id="ns_grades">${GRADES.map(gbtn).join("")}</div>
+      <label>What should we call you? <input type="text" id="ns_name" maxlength="20" placeholder="Nickname (no real name needed)" value="${esc(NS.name)}" onkeydown="if(event.key==='Enter')nsCreate()"></label>
+      <label id="ns_glab">What grade are you in? <span class="note">(US grade)</span></label>
+      <div class="colors" id="ns_grades" role="group" aria-labelledby="ns_glab">${GRADES.map(gbtn).join("")}</div>
       <label>Choose a character color</label>
-      <div class="colors">${COLORS.map(c=>`<button style="background:${c}" class="${NS.color===c?'on':''}" onclick="nsKeep();NS.color='${c}';screenNewStudent()"></button>`).join("")}</div>
+      <div class="colors">${COLORS.map((c,i)=>`<button style="background:${c}" class="${NS.color===c?'on':''}" aria-label="Color ${i+1}" aria-pressed="${NS.color===c}" onclick="nsKeep();NS.color='${c}';NS.f='Color ${i+1}';screenNewStudent()"></button>`).join("")}</div>
       <label>How many new words each day?</label>
-      <div class="colors">${DAILY_OPTS.map(n=>`<button style="width:auto;padding:0 10px;background:${NS.daily===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="nsKeep();NS.daily=${n};screenNewStudent()">${n}</button>`).join("")}</div>
+      <div class="colors">${DAILY_OPTS.map(n=>`<button style="width:auto;min-width:44px;padding:0 10px;background:${NS.daily===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:18px" aria-label="${n} new words a day" aria-pressed="${NS.daily===n}" onclick="nsKeep();NS.daily=${n};NS.f='${n} new words a day';screenNewStudent()">${n}</button>`).join("")}</div>
       <p class="note">You can change all of this later in ⚙️ Settings.</p>
       <div id="ns_err">${NS.err?`<div class="fb no">${esc(NS.err)}</div>`:""}</div>
       <button class="btn green" style="margin-top:10px" onclick="nsCreate()">Continue ▶</button>
     </div>`);
+  const f = first ? $("ns_name") : (NS.f && document.querySelector(`[aria-label="${NS.f}"]`));
+  if(f) f.focus(); NS.f=null;
 }
 function nsKeep(){ const e=$("ns_name"); if(e && NS) NS.name=e.value; }
 function nsCreate(){
@@ -3212,12 +3291,15 @@ function screenHome(){
   const stages = GROUPS.map(g=>{ const st=groupStats(p,g); const on=g.stages.includes(p.stage);
     const cur = on ? `<small class="now">▶ Studying now</small>` : "";
     return `
-    <button class="stage big ${on?'on':''}" onclick="setGroup('${g.id}')">
+    <button class="stage big ${on?'on':''}" onclick="askGroup('${g.id}')" aria-label="${g.name}${on?' (studying now)':''}">
       <span class="gicon">${g.icon}</span> ${g.name}<small>${g.sub}</small><small class="mixl">${g.mix}</small>
       <div class="bar"><i style="width:${Math.round(st.learned/st.total*100)}%"></i></div>
       <small style="margin:4px 0 0">Learned ${st.learned}/${st.total} · ⭐ ${st.master}</small>${cur}
     </button>`;}).join("");
-  const pets = p.pets.length ? p.pets.map((e,i)=>`<button class="pet" onclick="petTalk(this)">${e}</button>`).join("")
+  const known=Object.keys(p.words).filter(id=>WORDS[id]), mastered=known.filter(id=>p.words[id].box>=4).length;
+  const gNow=groupOf(p.stage), stNow=groupStats(p,gNow), studied=Object.keys(p.days||{}).length;
+  const pend = p.diag && p.diag.chosen==null && p.diag.suggested && !gNow.stages.includes(p.diag.suggested) ? GROUPS.find(g=>g.stages.includes(p.diag.suggested)) : null;
+  const pets = p.pets.length ? p.pets.map((e,i)=>`<button class="pet" onclick="petTalk(this)">${esc(e)}</button>`).join("")
     : `<div class="empty">No pets yet.<br>Collect coins and hatch an egg! 🥚</div>`;
   render(`
     <div class="top">
@@ -3234,14 +3316,32 @@ function screenHome(){
       </div>
     </div>
     <div class="card" style="text-align:center">
-      <div style="font-size:22px">${doneToday?'✅ Mission complete!':'🗡️ Today\'s Mission'}</div>
-      <div class="note" style="margin:4px 0 0">📍 ${groupOf(p.stage).name} · ${groupOf(p.stage).mix}</div><div class="note" style="margin:2px 0 12px">${p.daily||5} new words · ${due} to review ${due&&dueList(p).some(id=>isBoss(p.words[id]))?'· 👾 Boss alert!':''} </div>
-      <button class="btn green" onclick="startMission()">${doneToday?'Play again ▶':'Start mission ▶'}</button>
-      ${p.onboarding && p.onboarding.placement==="skipped" && !p.diag?`<div class="note" style="margin-top:10px">📍 Starting level based on grade only. <button class="plink" style="display:inline" onclick="diagStart(S.active,'home')">🧭 Take the placement check</button></div>`:''}
+      <div style="font-size:24px">${doneToday?'✅ Today\'s Mission: done!':'🗡️ Today\'s Mission'}</div>
+      <div class="note" style="margin:4px 0 0">📍 ${gNow.icon} ${gNow.name} · ${gNow.mix}</div>
+      <div style="display:flex;justify-content:center;gap:8px;margin:8px 0 12px;flex-wrap:wrap"><span class="pill">🆕 ${p.daily||5} new words</span><span class="pill">🔁 ${due} to review</span>${due&&dueList(p).some(id=>isBoss(p.words[id]))?'<span class="pill">👾 Boss</span>':''}</div>
+      <button class="btn green" onclick="startMission()">${doneToday?'Practice again ▶':'Start Mission ▶'}</button>
+      ${doneToday?`<p class="note" style="margin-bottom:0">Great job! Your reviews are scheduled — come back tomorrow for the next mission. Want more now? Try More practice below.</p>`:''}
+      ${p.onboarding && p.onboarding.placement==="skipped" && !p.diag?`<div class="note" style="margin-top:10px">📍 Your level is temporary (based on grade only). <button class="plink" style="display:inline" onclick="diagStart(S.active,'home')">🧭 Take the placement check</button></div>`:''}
+      ${pend?`<div class="note" style="margin-top:10px">🧭 Your placement check suggests <b>${pend.icon} ${pend.name}</b>. <button class="plink" style="display:inline" onclick="applySuggestion()">Ask a parent to apply it</button></div>`:''}
       <div class="note" style="margin-top:8px">${esc(S.reward)}</div>
-      ${MIX[groupOf(p.stage).id]?`<button class="plink" onclick="screenPractice('${groupOf(p.stage).id}')">🎯 Practice by type</button>`:''}
-      ${pasGroupOK(p)?`<button class="plink" onclick="startPassages()">📖 SAT Passage Practice${pasDueCount(p)?` · ${pasDueCount(p)} to review`:''}</button>`:''}
-      ${basicsTodo(p).length?`<button class="plink" onclick="startBasics()">🧱 Basic words review (${basicsTodo(p).length})</button>`:''}
+    </div>
+    <div class="card">
+      <b>📊 My progress</b>
+      <div class="kv"><span>${gNow.icon} ${gNow.name}</span><span>${stNow.learned} / ${stNow.total} words</span></div>
+      <div class="bar" style="margin:6px 0"><i style="width:${Math.round(stNow.learned/stNow.total*100)}%"></i></div>
+      <div class="kv"><span>Words learned (all levels)</span><span>${known.length}</span></div>
+      <div class="kv"><span>⭐ Strong words</span><span>${mastered}</span></div>
+      <div class="kv"><span>📅 Days studied</span><span>${studied}</span></div>
+    </div>
+    <div class="card">
+      <b>➕ More practice</b>
+      <div class="more" style="margin-top:8px">
+        ${MIX[gNow.id]?`<button class="btn white" onclick="screenPractice('${gNow.id}')">🎯 Practice by type</button>`:''}
+        ${pasGroupOK(p)?`<button class="btn white" onclick="startPassages()">📖 SAT Passages${pasDueCount(p)?` (${pasDueCount(p)})`:''}</button>`:''}
+        ${basicsTodo(p).length?`<button class="btn white" onclick="startBasics()">🧱 Basic words (${basicsTodo(p).length})</button>`:''}
+        <button class="btn white" onclick="diagStart(S.active,'home')">🧭 Placement check</button>
+        <button class="btn white" onclick="screenAbout()">🔒 About your data</button>
+      </div>
     </div>
     <h3 style="margin:16px 4px 6px">🏝️ ${esc(p.name)}'s Word Island</h3>
     <div class="island">${pets}</div>
@@ -3249,7 +3349,8 @@ function screenHome(){
       <button class="btn purple small" onclick="screenShop()">🥚 Hatch</button>
       <button class="btn blue small" onclick="screenBook()">📖 Word Book</button>
     </div>
-    <h3 style="margin:18px 4px 6px">🗺️ Stages</h3>
+    <h3 style="margin:18px 4px 6px">🗺️ Levels</h3>
+    <p class="note" style="margin:0 4px 6px">Changing your level asks a parent first.</p>
     <div class="stages">${stages}</div>`);
 }
 
@@ -3295,6 +3396,10 @@ function finishFamPractice(){
     <p class="note">Practice only — coins and review dates were not changed.</p></div>
     <div class="row" style="margin-top:14px"><button class="btn blue small" onclick="startFamPractice(groupOf(P().stage).id)">Again ▶</button><button class="btn green small" onclick="screenHome()">Home</button></div>`);
 }
+function askGroup(gid){ const p=P(), g=GROUPS.find(x=>x.id===gid); if(!g || g.stages.includes(p.stage)) return;
+  parentGate(`Change ${p.name}'s level to ${g.name}? Learned words and review dates are kept.`, ()=>setGroup(gid)); }
+function applySuggestion(){ const p=P(); if(!p.diag || !p.diag.suggested) return; const g=GROUPS.find(x=>x.stages.includes(p.diag.suggested));
+  parentGate(`Use ${g.name} as ${p.name}'s level (placement check suggestion)?`, ()=>{ p.stage=p.diag.suggested; p.diag.chosen=p.diag.suggested; save(); screenHome(); }); }
 function setGroup(gid){ const p=P(), g=GROUPS.find(x=>x.id===gid); if(!g.stages.includes(p.stage)) p.stage=g.stages[0]; save(); screenHome(); }
 // optional: practice one question type only (records still go to the same internal course)
 function screenPractice(gid){
@@ -3951,6 +4056,7 @@ async function checkMine(){
   const words = t.split(/\s+/).filter(Boolean).length;
   if(!t.toLowerCase().includes(stem)){ $("fb").innerHTML=`<div class="fb no">Use the word <b class="en">${esc(w.w)}</b> in your sentence!</div>`; return; }
   if(words<5){ $("fb").innerHTML=`<div class="fb no">A little longer, please! (5+ words)</div>`; return; }
+  if(!grammarOn()){ $("fb").innerHTML=`<div class="fb ok">✅ Nice sentence! Show it to a parent or teacher.</div>`; return bonusDone(t,30,false); }
   checking=true; $("fb").innerHTML=`<div class="fb">🔎 Checking grammar...</div>`;
   let ms=null;
   try{ ms = await grammarCheck(t); }catch(e){ ms=null; }
@@ -4003,6 +4109,7 @@ function finish(){
       ${M.mine?`<div class="ex en" style="text-align:left">✍️ ${esc(M.mine)}</div>`:''}
     </div>
     <div class="stamp">✅ ${esc(p.name)} finished today's mission<br><span class="note" style="color:var(--ink)">${now.getMonth()+1}/${now.getDate()} ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span><br>${esc(S.reward)}</div>
+    <div class="card"><b>What's next?</b><p class="note" style="margin:4px 0 0">Today's words are saved and their reviews are scheduled. Come back tomorrow for your next mission. Coins: hatch an egg for your Word Island, or try More practice on the home screen.</p></div>
     <div class="row" style="margin-top:18px">
       <button class="btn purple small" onclick="screenShop()">🥚 Hatch</button>
       <button class="btn green small" onclick="screenHome()">Home</button>
@@ -4089,15 +4196,35 @@ function backupCopy(){
 }
 function showCode(txt){ $("bkmsg").innerHTML=`<p class="note">Copy all of this text and keep it safe:</p><textarea style="width:100%;height:120px;font-size:11px" readonly onclick="this.select()">${esc(txt)}</textarea>`; S.lastBackup=today(); save(); }
 function restoreCodeUI(){ $("bkmsg").innerHTML=`<textarea id="rcode" style="width:100%;height:120px;font-size:11px" placeholder="Paste the backup code here"></textarea><button class="btn blue small" style="margin-top:8px" onclick="restoreText($('rcode').value)">Restore</button>`; }
-function restoreFile(inp){ const f=inp.files&&inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>restoreText(r.result); r.readAsText(f); }
+function restoreFile(inp){ const f=inp.files&&inp.files[0]; if(!f) return;
+  if(f.size>20e6){ $("bkmsg").innerHTML=`<div class="fb no" style="margin-top:8px">❌ That file is too large to be a Word Quest backup.</div>`; inp.value=""; return; }
+  const r=new FileReader(); r.onload=()=>restoreText(r.result); r.onerror=()=>{ $("bkmsg").innerHTML=`<div class="fb no" style="margin-top:8px">❌ The file could not be read. Try again or use a backup code.</div>`; };
+  r.readAsText(f); inp.value=""; }
+// a backup must have a profiles object whose IDs and fields look like Word Quest's; colors that are not plain hex are reset
+function backupProblem(data){
+  if(!okState(data)) return "no student list";
+  for(const [k,p] of Object.entries(data.profiles)){
+    if(!/^[A-Za-z0-9_-]{1,40}$/.test(k)) return "a student ID is not valid";
+    if(!p || typeof p!=="object" || Array.isArray(p)) return "a student entry is not valid";
+    for(const f of ["words","days","hist","pas","basics"]) if(p[f]!==undefined && (typeof p[f]!=="object" || p[f]===null || Array.isArray(p[f]))) return `${f} of a student is not valid`;
+    if(p.pets!==undefined && !Array.isArray(p.pets)) return "pets of a student are not valid";
+    if(p.stage!==undefined && !STAGE_IDS.includes(p.stage)) return "a student's level is not valid";
+  }
+  return null;
+}
 function restoreText(txt){
   let o=null; try{ o=JSON.parse(String(txt).trim()); }catch(e){}
   const data = o && (o.data||o);
   if(!data || !data.profiles || typeof data.profiles!=="object"){ $("bkmsg").innerHTML=`<div class="fb no" style="margin-top:8px">❌ That doesn't look like a Word Quest backup.</div>`; return; }
+  const bad=backupProblem(data);
+  if(bad){ $("bkmsg").innerHTML=`<div class="fb no" style="margin-top:8px">❌ This backup can't be used (${esc(bad)}). Nothing was changed.</div>`; return; }
   const names=Object.values(data.profiles).map(p=>`${esc(p.name)}: ${Object.keys(p.words||{}).length} words, 🪙${p.coins||0}`).join("<br>") || "No students in this backup.";
-  $("bkmsg").innerHTML=`<div class="modal"><div class="card" style="text-align:center"><div style="font-size:19px">Replace the progress on this device with this backup?</div><p class="note">${names}</p>
+  $("bkmsg").innerHTML=`<div class="modal"><div class="card" style="text-align:center"><div style="font-size:19px">Replace the progress on this device with this backup?</div><p class="note">This browser now has ${Object.keys(S.profiles).length} student(s); the backup has ${Object.keys(data.profiles).length}. A copy of the current progress is kept in this browser.</p><p class="note">${names}</p>
     <div class="row"><button class="btn white small" onclick="$('bkmsg').innerHTML=''">Cancel</button><button class="btn green small" id="rgo">Restore</button></div></div></div>`;
-  $("rgo").onclick=()=>{ keepUnreadable(); S=data; S.active=null; Object.values(S.profiles).forEach(p=>{ p.words=p.words||{}; p.pets=p.pets||[]; p.days=p.days||{}; }); save(); screenProfiles(); };
+  $("rgo").onclick=()=>{ keepUnreadable(); try{ const cur=localStorage.getItem(KEY); if(cur) localStorage.setItem(KEY+"_before_restore", cur); }catch(e){}
+    S=data; S.active=null; Object.values(S.profiles).forEach(p=>{ p.words=p.words||{}; p.pets=p.pets||[]; p.days=p.days||{}; if(p.color!==undefined && !/^#[0-9a-fA-F]{3,8}$/.test(String(p.color))) p.color=COLORS[0]; }); save();
+    if(SAVE_FAIL){ $("bkmsg").innerHTML=`<div class="fb no" style="margin-top:8px">⚠️ The backup was read but this browser could not save it (storage full or blocked).</div>`; return; }
+    screenProfiles(); };
 }
 
 /* ---------- v11.20: unreadable saved data (never overwritten without a choice) ---------- */
@@ -4307,7 +4434,7 @@ function screenDiagResult(){
     <div class="card"><p class="note">Short placement check (pilot) — a starting suggestion, not a full test. A level counts as passed at 7 or 8 of 8. The suggestion is the highest level passed (Elementary if none was passed).</p>
       <div class="list">${rows}</div>
       <p style="font-size:19px;margin-top:10px">Suggested start: <b>${sg.icon} ${sg.name}</b></p>
-      ${onb?`<p class="note">Your grade is not your level: this suggestion comes from your answers. Younger students can decide together with a parent.</p>
+      ${onb?`<p class="note">Your grade is not your level: this suggestion comes from your answers. A parent confirms the level you start with — or choose "Not now" to keep your current level and decide later.</p>
       <div class="row"><button class="btn green small" onclick="diagChoose(true)">Use This Level</button><button class="btn white small" onclick="diagOther()">Choose Another Level</button></div><div id="dgo"></div></div>`
       :`<p class="note">Now studying: ${cur.icon} ${cur.name}. Changing the start stage does not change any learned words, review dates, coins or pets.</p>
       <div class="row"><button class="btn green small" onclick="diagChoose(true)">Use suggestion (parent)</button><button class="btn white small" onclick="diagChoose(false)">Keep current stage</button></div></div>`}
@@ -4316,12 +4443,21 @@ function screenDiagResult(){
         <p class="note">These basic words have no card in the app, so they are practiced in "Basic words review" on the home screen.</p>`:'<p class="note">All 6 basic words were answered correctly. Other forms of these words are not marked as known.</p>'}</div>`);
 }
 function diagChoose(use){
-  const p=P(); if(use){ p.stage=p.diag.suggested; } p.diag.chosen=use?p.diag.suggested:p.stage; onbDone(p,"done"); save(); screenHome();
+  const p=P();
+  if(use && DG && DG.from!=="settings")
+    return parentGate(`Use ${DLN[p.diag.suggested]} as ${p.name}'s level?`, ()=>diagApply(p.diag.suggested), {cancelLabel:"Not now", onCancel:diagLater});
+  if(use) return diagApply(p.diag.suggested);
+  p.diag.chosen=p.stage; onbDone(p,"done"); save(); screenHome();
 }
+function diagApply(st){ const p=P(); if(!STAGE_IDS.includes(st)) return; p.stage=st; p.diag.chosen=st; onbDone(p,"done"); save(); screenHome(); }
+// "Not now": keep the current level; the suggestion stays on the home screen until a parent applies it
+function diagLater(){ const p=P(); onbDone(p,"done"); save(); screenHome(); }
 function diagOther(){
   $("dgo").innerHTML=`<div class="stages" style="margin-top:10px">${GROUPS.map(g=>`<button class="stage big" onclick="diagPick('${g.stages[0]}')"><span class="gicon">${g.icon}</span> ${g.name}<small>${g.sub}</small></button>`).join("")}</div>`;
 }
-function diagPick(st){ const p=P(); if(!STAGE_IDS.includes(st)) return; p.stage=st; p.diag.chosen=st; onbDone(p,"done"); save(); screenHome(); }
+function diagPick(st){ const p=P(); if(!STAGE_IDS.includes(st)) return;
+  if(DG && DG.from==="settings") return diagApply(st);
+  parentGate(`Use ${DLN[st]} as ${p.name}'s level?`, ()=>diagApply(st), {cancelLabel:"Not now", onCancel:diagLater}); }
 
 /* ---------- Problem reports ---------- */
 const FLAGS=["The answer is wrong","Two answers could be right","Spelling / grammar mistake","Explanation is confusing","Something else"];
@@ -4353,28 +4489,43 @@ function screenSettings(){
       <label>Name <input type="text" id="n_${k}" value="${esc(p.name)}"></label>
       <label>Grade <select id="g_${k}" style="width:100%;font-size:18px;padding:8px;border-radius:10px;border:3px solid var(--line)">${gradeOpts(p.grade)}</select></label>
       <label>New words per day</label>
-      <div class="colors">${[3,5,8,10,15].map(n=>`<button style="width:auto;padding:0 10px;background:${(p.daily||5)===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" onclick="S.profiles['${k}'].daily=${n};save();screenSettings()">${n}</button>`).join("")}</div>
+      <div class="colors">${[3,5,8,10,15].map(n=>`<button style="width:auto;min-width:44px;padding:0 10px;background:${(p.daily||5)===n?'var(--yellow)':'#fff'};font-family:Jua;font-size:16px" aria-label="${n} new words a day for ${esc(p.name)}" aria-pressed="${(p.daily||5)===n}" onclick="S.profiles['${k}'].daily=${n};save();screenSettings()">${n}</button>`).join("")}</div>
       <label>Character color</label>
-      <div class="colors">${COLORS.map(c=>`<button style="background:${c}" class="${p.color===c?'on':''}" onclick="S.profiles['${k}'].color='${c}';save();screenSettings()"></button>`).join("")}</div>
+      <div class="colors">${COLORS.map((c,i)=>`<button style="background:${c}" class="${p.color===c?'on':''}" aria-label="Color ${i+1} for ${esc(p.name)}" aria-pressed="${p.color===c}" onclick="S.profiles['${k}'].color='${c}';save();screenSettings()"></button>`).join("")}</div>
       <button class="btn white small" style="margin-top:12px" onclick="diagStart('${k}')">🧭 Placement check (pilot)</button>
       ${p.diag?`<div class="note">Last check: suggested ${esc(DLN[p.diag.suggested]||p.diag.suggested)}${p.diag.chosen?` · now ${esc(DLN[p.diag.chosen]||subName(p.diag.chosen))}`:''}</div>`:''}
-      <button class="btn white small" style="margin-top:12px" onclick="askReset('${k}')">🗑️ Reset ${esc(p.name)}'s progress</button>
+      <label>Level</label>
+      <div class="colors">${GROUPS.map(g=>`<button style="width:auto;padding:0 10px;background:${g.stages.includes(p.stage)?'var(--yellow)':'#fff'};font-size:16px" onclick="psLevel('${k}','${g.id}')">${g.icon} ${g.name}</button>`).join("")}</div>
+      ${p.diag&&p.diag.chosen==null&&p.diag.suggested&&!groupOf(p.stage).stages.includes(p.diag.suggested)?`<button class="btn green small" style="margin-top:8px" onclick="psApply('${k}')">Apply placement suggestion: ${esc(DLN[p.diag.suggested]||p.diag.suggested)}</button>`:''}
+      <div class="note">Words learned: ${Object.keys(p.words||{}).filter(id=>WORDS[id]).length} · days studied: ${Object.keys(p.days||{}).length}</div>
+      <div class="row" style="margin-top:12px"><button class="btn white small" onclick="askReset('${k}')">🔄 Reset progress</button><button class="btn white small" style="color:var(--red)" onclick="askDelete('${k}')">🗑️ Delete student</button></div>
     </div>`).join("");
-  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ Save</button><b style="font-size:20px">⚙️ Settings</b></div>
-    <p class="note">Settings are not locked. On a shared device, any student can open this page.</p>
+  render(`<div class="top"><button class="back" onclick="saveSettings()">◀ Save</button><b style="font-size:20px">👪 Parent Settings</b></div>
+    <p class="note">For parents. The parent check before this page is a reminder, not a lock — anyone using this browser can change saved progress.</p>
+    <h3 style="margin:14px 4px 0">Students</h3>
     ${prof}
     <button class="btn green small" style="margin-bottom:12px" onclick="saveSettings();screenNewStudent()">➕ Add Student</button>
+    <h3 style="margin:14px 4px 0">Learning options</h3>
     <div class="card"><label>Mission reward message <input type="text" id="rw" value="${esc(S.reward)}"></label>
     <p class="note">Shown with the completion stamp after each mission.</p></div>
     <div class="card"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" style="width:auto" ${S.useReviewEx!==false?"checked":""} onchange="S.useReviewEx=this.checked;save()"> Use new review sentences</label>
       <p class="note">On: reviews show the word in sentences the child has not seen recently (${Object.values(REVIEW_EX).reduce((a,b)=>a+b.length,0)} checked sentences for ${Object.keys(REVIEW_EX).length} words). Off: reviews use only the original sentences.</p></div>
     <div class="card"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" style="width:auto" ${S.useRel!==false?"checked":""} onchange="S.useRel=this.checked;save()"> Same / opposite meaning questions</label>
       <p class="note">On: each new and review word gets one "same meaning" or "opposite meaning" question per mission (${Object.values(REL).filter(r=>r[0]).length} words with a synonym, ${Object.values(REL).filter(r=>r[2]).length} with an antonym). Off: these questions are not asked.</p></div>
-    <div class="card"><b>💾 Backup &amp; restore</b>
-      <p class="note">Progress lives only in this browser. Clearing browser data or changing devices erases it — save a backup now and then. ${backupNote()}</p>
+    <h3 style="margin:14px 4px 0">Data &amp; privacy</h3>
+    <div class="card" id="bkcard"><b>💾 Backup &amp; restore</b>
+      <p class="note"><b>Progress lives only in this browser.</b> Clearing browsing/site data, uninstalling the browser or using a private window erases it, and it cannot be recovered without a backup. Save a backup now and then — a backup also moves progress to another device. ${backupNote()}</p>
       <div class="row"><button class="btn blue small" onclick="backupDownload()">⬇️ Save backup file</button><button class="btn white small" onclick="backupCopy()">📋 Copy backup code</button></div>
       <div class="row" style="margin-top:8px"><label class="btn white small" style="text-align:center">📂 Restore from file<input type="file" accept=".json,.txt,application/json" style="display:none" onchange="restoreFile(this)"></label><button class="btn white small" onclick="restoreCodeUI()">⌨️ Restore from code</button></div>
       <div id="bkmsg"></div></div>
+    <div class="card"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" style="width:auto" ${grammarOn()?"checked":""} onchange="S.extGrammar=this.checked;save()"> Sentence grammar check (outside service)</label>
+      <p class="note">On: in the bonus stage, the student's sentence is sent to LanguageTool (languagetool.org) for a grammar check. Off: nothing is sent; the sentence is accepted if it uses the word and has 5+ words. Recommended off for students under 13 unless a parent agrees.</p></div>
+    <div class="card"><b>🔢 Parent PIN (optional)</b>
+      <p class="note">${/^\d{4}$/.test(S.parentPin||"")?"A PIN is set. The parent check asks for it.":"No PIN. The parent check asks a grown-up math question."} The PIN is stored in this browser and is not a password or security feature.</p>
+      <div class="row"><input type="text" id="pinin" inputmode="numeric" maxlength="4" placeholder="4 digits" aria-label="New parent PIN" style="margin-top:0"><button class="btn white small" onclick="psPin()">Save PIN</button></div>
+      ${/^\d{4}$/.test(S.parentPin||"")?`<button class="plink" onclick="delete S.parentPin;save();screenSettings()">Remove PIN</button>`:''}
+      <div id="pinmsg"></div></div>
+    <div class="card"><button class="plink" onclick="screenAbout()">🔒 About your data (what is saved, outside services)</button></div>
     ${basicsCard()}
     ${reportsCard()}
     <div id="modal"></div>`);
@@ -4387,7 +4538,25 @@ function saveSettings(){
     const v=$("g_"+k).value, n=+v; if(v!=="keep" && GRADES.includes(n) && gradeLabel(n)!==p.grade) p.grade=gradeLabel(n); });
   S.reward=$("rw").value.trim()||S.reward; save(); screenProfiles();
 }
-function askReset(k){
+function psLevel(k, gid){ const p=S.profiles[k], g=GROUPS.find(x=>x.id===gid); if(!p||!g) return; if(!g.stages.includes(p.stage)){ p.stage=g.stages[0]; save(); } screenSettings(); }
+function psApply(k){ const p=S.profiles[k]; if(!p||!p.diag||!STAGE_IDS.includes(p.diag.suggested)) return; p.stage=p.diag.suggested; p.diag.chosen=p.diag.suggested; save(); screenSettings(); }
+function psPin(){ const v=($("pinin").value||"").trim(); if(!/^\d{4}$/.test(v)){ $("pinmsg").innerHTML=`<div class="fb no">Please type exactly 4 digits.</div>`; return; } S.parentPin=v; save(); screenSettings(); }
+// typing the nickname confirms reset / delete (each student by ID; other students are not touched)
+function confirmTyped(k, title, label, go){
+  const p=S.profiles[k];
+  $("modal").innerHTML=`<div class="modal" role="dialog" aria-modal="true"><div class="card" style="text-align:center">
+    <div style="font-size:20px">${title}</div>
+    <label for="cfin">Type <b>${esc(p.name)}</b> to confirm</label><input type="text" id="cfin" autocomplete="off">
+    <div id="cfmsg"></div>
+    <div class="row" style="margin-top:14px"><button class="btn white small" onclick="$('modal').innerHTML=''">Cancel</button>
+    <button class="btn small" style="background:var(--red);color:#fff" id="cfgo">${label}</button></div></div></div>`;
+  $("cfin").focus();
+  $("cfgo").onclick=()=>{ if(($("cfin").value||"").trim()!==p.name.trim()){ $("cfmsg").innerHTML=`<div class="fb no">The nickname does not match.</div>`; return; } go(); };
+}
+function askDelete(k){ confirmTyped(k, `Delete ${esc(S.profiles[k].name)} and all of this student's progress? This cannot be undone without a backup.`, "Delete student", ()=>doDelete(k)); }
+function doDelete(k){ delete S.profiles[k]; if(S.active===k) S.active=null; save(); if(Object.keys(S.profiles).length) screenSettings(); else screenProfiles(); }
+function askReset(k){ return confirmTyped(k, `Delete all words, coins and pets for ${esc(S.profiles[k].name)}? The student stays on the list.`, "Reset progress", ()=>doReset(k)); }
+function askResetOld(k){
   $("modal").innerHTML=`<div class="modal"><div class="card" style="text-align:center">
     <div style="font-size:20px">Delete all words, coins and pets for ${esc(S.profiles[k].name)}?</div>
     <div class="row" style="margin-top:14px"><button class="btn white small" onclick="$('modal').innerHTML=''">Cancel</button>

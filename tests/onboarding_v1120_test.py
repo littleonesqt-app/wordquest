@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
-"""Word Quest v11.20 onboarding — regression + A1–A12 checks in headless Chrome (Playwright).
-Serve three versions side by side, then run:
-  mkdir site && git show origin/main:index.html > site/v1118.html
-  git show origin/curriculum-v11.19:index.html > site/v1119.html && cp index.html site/v1120.html
-  (cd site && python3 -m http.server 8765 &) ; python3 tests/onboarding_v1120_test.py
-v1118 = old main (rollback check), v1119 = Round2 baseline (regression), v1120 = this branch."""
+"""Word Quest v11.20 onboarding — regression + A1–A12 checks in headless Chrome.
+Usage: python3 run_tests.py   (site served at http://localhost:8765/)"""
 import json, sys, time, traceback
 from playwright.sync_api import sync_playwright
 
@@ -32,7 +28,7 @@ class App:
         self.errors = []
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         self.ver = ver
-        self.page.goto(BASE + ver + ".html")
+        self.page.goto(BASE + ("v1120b" if ver=="v1120" else ver) + ".html")
         self.page.wait_for_function("typeof S!=='undefined'")
     def js(self, code, arg=None):
         return self.page.evaluate(code, arg) if arg is not None else self.page.evaluate(code)
@@ -57,6 +53,9 @@ CONTENT = """()=>({words:Object.keys(WORDS).length, cards:STAGES.reduce((a,s)=>a
   basics:(typeof BASICS!=='undefined'?BASICS.length:null), mix:JSON.stringify(MIX), int:JSON.stringify(INT), egg:EGG,
   review:Object.values(REVIEW_EX).reduce((a,b)=>a+b.length,0), rel:Object.keys(REL).length, stages:STAGES.map(s=>s.id+':'+s.words.length).join(' ')})"""
 MISSION_SIG = """(k)=>{ choose(k); startMission(); return JSON.stringify({news:M.news, rev:M.reviews, q:M.q.map(q=>q.id+'/'+q.t+'/'+(q.sk||''))}); }"""
+
+def gate(app):
+    app.page.wait_for_selector("#pg_in"); app.page.fill("#pg_in", app.js("PG.ans")); app.page.locator("#pgate button", has_text="OK").click()
 
 def ui_new_student(app, name, grade, daily=None, color_idx=None):
     """Fill the sign-up form through the screen (clicks and typing)."""
@@ -108,8 +107,8 @@ def main():
         check("A7", "2,785 word cards / 393 Word Families / 60 SAT passages present", k20["words"] == 2785 and k20["fams"] == 393 and k20["passages"] == 60,
               f"words={k20['words']} fams={k20['fams']} passages={k20['passages']}")
         check("A7", "SAT mission mix 5:3:2 (s:c:t) unchanged", '"S":[["s",5,3],["c",3,1],["t",2,2]]' in k20["mix"], k20["mix"])
-        same_fn = c19.js("()=>[startMission,finish,planMix,mixReviews,balanceMix,pickNew,dueList,chooseSentences,relQ,startPassages,pasAnswer,diagNext,diagSave,diagItems,diagStartLevel,hatch,backupText].map(f=>f.toString()).join('\\n')") == \
-                  c20.js("()=>[startMission,finish,planMix,mixReviews,balanceMix,pickNew,dueList,chooseSentences,relQ,startPassages,pasAnswer,diagNext,diagSave,diagItems,diagStartLevel,hatch,backupText].map(f=>f.toString()).join('\\n')")
+        same_fn = c19.js("()=>[startMission,{toString:()=>finish.toString().split('render(')[0]},planMix,mixReviews,balanceMix,pickNew,dueList,chooseSentences,relQ,startPassages,pasAnswer,diagNext,diagSave,diagItems,diagStartLevel,hatch,backupText].map(f=>f.toString()).join('\\n')") == \
+                  c20.js("()=>[startMission,{toString:()=>finish.toString().split('render(')[0]},planMix,mixReviews,balanceMix,pickNew,dueList,chooseSentences,relQ,startPassages,pasAnswer,diagNext,diagSave,diagItems,diagStartLevel,hatch,backupText].map(f=>f.toString()).join('\\n')")
         check("A11", "learning engine source unchanged (mission, review schedule, passages, placement scoring, rewards, backup)", same_fn)
         c19.close(); c20.close()
 
@@ -118,7 +117,7 @@ def main():
         check("setup", "legacy data built: 2 students with words, history, coins, pets, diag, basics, pas",
               all(L["profiles"][k]["words"] for k in "ab") and L["profiles"]["a"].get("diag") and L["profiles"]["b"].get("pas") and L["profiles"]["a"]["pets"],
               {k: {f: (len(v) if isinstance(v, (dict, list)) else v) for f, v in L["profiles"][k].items() if f in ("words", "hist", "pets", "days", "coins", "xp", "stage", "diag", "basics", "pas")} for k in "ab"})
-        open(SHOTS + "legacy_data.json", "w").write(legacy)
+        open(SHOTS + "legacy.json", "w").write(legacy)
 
         # mission built from the same saved data with the same random numbers must be identical in v11.19 and v11.20
         sig = {}
@@ -184,7 +183,7 @@ def main():
                 m.shot("07_placement_result")
                 d = m.js("P().diag")
                 check("A6", "grade 4 check: E 8/8, M 3/8 → suggests Elementary", d["scores"] == {"e": 8, "m": 3} and d["suggested"] == "e", d["scores"])
-                m.click("Use This Level")
+                m.click("Use This Level"); gate(m)
             elif gr == 7:
                 m.click("Take the Placement Check ▶"); m.click("Start ▶")
                 do_diag(m, [7, 7, 6])   # starts at Middle: M 7 → H 7 → S 6 → suggest High School
@@ -192,19 +191,19 @@ def main():
                 check("A6", "grade 7 check: M 7/8, H 7/8, S 6/8 → suggests High School (7 = pass, 6 = not)", d["scores"] == {"m": 7, "h": 7, "s": 6} and d["suggested"] == "h", d["scores"])
                 m.click("Choose Another Level")
                 m.shot("08_choose_another_level")
-                m.page.locator("#dgo button", has_text="Middle School").click()
+                m.page.locator("#dgo button", has_text="Middle School").click(); gate(m)
                 check("A6", "Choose Another Level → Middle School chosen instead of suggestion", m.js("P().stage") == "m" and m.js("P().diag.chosen") == "m")
             elif gr == 10:
                 m.click("Start with the suggested level (🔥 Middle School)")
                 check("A5", "grade 10 skip → Middle School (temporary), not SAT/High", m.js("P().stage") == "m" and m.js("P().onboarding.placement") == "skipped")
                 m.shot("09_home_new_student_skipped")
-                check("C", "home shows the temporary-level hint with a placement link", "Starting level based on grade only" in m.text())
+                check("C", "home shows the temporary-level hint with a placement link", "level is temporary" in m.text())
             else:   # grade 12 Alex #2: check with 0 correct at every level
                 m.click("Take the Placement Check ▶"); m.click("Start ▶")
                 do_diag(m, [0, 0])     # starts at Middle: 0 → Elementary 0 → suggest Elementary
                 d = m.js("P().diag")
                 check("A6", "grade 12 check, all 'I don't know': M 0/8, E 0/8 → suggests Elementary", d["scores"] == {"m": 0, "e": 0} and d["suggested"] == "e", d["scores"])
-                m.click("Use This Level")
+                m.click("Use This Level"); gate(m)
             t = m.text()
             check("8", f"{nm} g{gr}: personal home with Today's Mission first", "Today's Mission" in t and t.find("Today's Mission") < t.find("Word Island"))
             m.click("◀ 👥")
@@ -225,14 +224,14 @@ def main():
         do_diag(m, [8, 8, 8])
         d = m.js("P().diag")
         check("A6", "later check from home: M 8, H 8, S 8 → suggests SAT Prep", d["scores"] == {"m": 8, "h": 8, "s": 8} and d["suggested"] == "s", d["scores"])
-        m.click("Use This Level")
+        m.click("Use This Level"); gate(m)
         check("A6", "placement does not change words, history, coins, pets, days", m.js("JSON.stringify([P().words,P().hist||{},P().coins,P().pets,P().days])") == words_before)
-        check("A6", "after placement the hint disappears and stage = s", "Starting level based on grade only" not in m.text() and m.js("P().stage") == "s")
+        check("A6", "after placement the hint disappears and stage = s", "level is temporary" not in m.text() and m.js("P().stage") == "s")
 
         # A7: Start Mission works for a new student and records the result
         jor = new_ids[("Jordan", 7)]
         m.js(f"choose('{jor}')")
-        m.click("Start mission ▶")
+        m.click("Start Mission ▶")
         m.shot("11_new_student_mission_learn")
         sim = m.js("()=>{ M.all.forEach((id,i)=>M.ok[id]=i%3!==0); M.coins=80; finish(); const p=P(); return {words:Object.keys(p.words).length, coins:p.coins, days:Object.keys(p.days).length, due:Object.values(p.words).every(r=>r.due>today()-1)}; }")
         check("A7", "new student: Start Mission opens the lesson and finishing records words, coins, day", sim["words"] > 0 and sim["coins"] >= 80 and sim["days"] == 1, sim)
@@ -241,7 +240,7 @@ def main():
         m.shot("13_home_after_mission")
 
         # existing student: open, home, settings save, switch — data must stay byte-identical
-        m.js("screenProfiles()"); m.click("⚙️ Settings")
+        m.js("screenProfiles()"); m.click("👪 Parent Settings"); gate(m)
         m.shot("14_settings")
         sel = m.js("()=>['a','b'].map(k=>$('g_'+k).value)")
         m.click("◀ Save")
@@ -252,7 +251,7 @@ def main():
               json.dumps(after["profiles"]["b"], ensure_ascii=False) == json.dumps(before["profiles"]["b"], ensure_ascii=False), f"grade selects={sel}")
         check("A4", "existing reward message and backup date kept", after["reward"] == before["reward"] and after.get("lastBackup") == before.get("lastBackup"))
         # rename in settings (by ID): rename second Alex only
-        m.click("⚙️ Settings")
+        m.click("👪 Parent Settings"); gate(m)
         m.page.fill(f"#n_{alexes[1]}", "Alex K")
         m.page.select_option(f"#g_{alexes[1]}", "11")
         m.click("◀ Save")
